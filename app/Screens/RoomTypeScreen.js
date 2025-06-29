@@ -21,15 +21,15 @@ const getFloor = (roomNumber) => {
 
 const RoomTypeScreen = ({ route, navigation }) => {
   const { type } = route.params;
+  const { hotelName } = route.params;
   const [rooms, setRooms] = useState([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const loadRooms = async () => {
       try {
-        const dbRooms = await dbService.getRoomsByType(type);
+        const dbRooms = await dbService.getRoomsByType(hotelName,type);
         setRooms(dbRooms);
       } catch (error) {
         console.error('Failed to load rooms:', error);
@@ -124,7 +124,7 @@ const shouldShowCheckoutIcon = (room) => {
                 <TouchableOpacity
                   key={room.id}
                   style={[styles.item, getStatusStyle(room.status)]}
-                  onPress={() => navigation.navigate('RoomDetails', { room })}
+                  onPress={() => navigation.navigate('RoomDetails', { room,hotelName })}
                 >
                   <View style={styles.roomRow}>
                     <Text style={styles.text}>

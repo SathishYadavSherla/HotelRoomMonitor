@@ -4,30 +4,7 @@ import { View, Text, Image, ScrollView, StyleSheet, Dimensions } from 'react-nat
 const AboutUsScreen = () => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Image
-        source={require('../Images/swagath3.jpg')} // Adjust path relative to this file
-        style={styles.image}
-        resizeMode="cover"
-      />
-      <Text style={styles.title}>About Our Hotel</Text>
-      <Text style={styles.description}>
-        Welcome to our hotel! Nestled in the heart of the city, our luxurious rooms,
-        exceptional service, and attention to detail ensure a memorable stay. Whether
-        you're here for business or leisure, we strive to offer an unforgettable experience.
-      </Text>
-
-      <Text style={styles.subheading}>Our Mission</Text>
-      <Text style={styles.description}>
-        Our mission is to provide a home away from home with unmatched hospitality
-        and comfort. We value every guest and work hard to exceed expectations.
-      </Text>
-
-      <Text style={styles.subheading}>Contact Info</Text>
-      <Text style={styles.description}>
-        📍 123 Main Street, YourCity, Country{'\n'}
-        📞 +1 234 567 890{'\n'}
-        📧 contact@yourhotel.com
-      </Text>
+      
     </ScrollView>
   );
 };

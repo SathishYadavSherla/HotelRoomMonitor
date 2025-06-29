@@ -4,8 +4,8 @@ export const showAlertWithNavigationReset = (
   navigation,
   title,
   message,
-  parentRouteName,
-  nestedRouteName
+  targetRouteName, // just the screen you want to reset to
+  params = {}
 ) => {
   Alert.alert(title, message, [
     {
@@ -15,14 +15,14 @@ export const showAlertWithNavigationReset = (
           index: 0,
           routes: [
             {
-              name: parentRouteName,
-              state: {
-                routes: [{ name: nestedRouteName }]
-              }
+              name: targetRouteName,
+              params
             }
           ]
         });
       }
     }
   ]);
+  console.log('Navigation Params:', params);
 };
+

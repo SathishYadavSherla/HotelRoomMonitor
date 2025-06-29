@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, FlatList, ScrollView,TouchableOpacity} from 're
 import  { useLayoutEffect } from 'react';
 
 const BookedRooms = ({ route , navigation}) => {
-  console.log('Rooms',route.params);
   const { rooms } = route.params;
   const { title } = route.params;
   useLayoutEffect(() => {
@@ -22,11 +21,11 @@ const BookedRooms = ({ route , navigation}) => {
       {title === 'Booked Rooms' && (<>
       <View style={styles.section}>
         <Text style={styles.label}>Member Name:</Text>
-        <Text style={styles.value}>{item.membername}</Text>
+        <Text style={styles.value}>{item.memberName}</Text>
       </View>
       <View style={styles.section}>
         <Text style={styles.label}>Phone:</Text>
-        <Text style={styles.value}>{item.memberphone}</Text>
+        <Text style={styles.value}>{item.memberPhone}</Text>
       </View>
       </>
       )}

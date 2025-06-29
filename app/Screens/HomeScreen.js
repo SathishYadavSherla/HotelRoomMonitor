@@ -3,32 +3,42 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList,Modal,ActivityIndicator } from 'react-native';
 import dbService from '../Services/dbService'; // Make sure path is correct
 
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = ({ route,navigation }) => {
+  
+const { hotelName } = route.params ?? {};
+// console.log('HotelName in HomeScreen:', hotelName);
+
   const [roomTypes, setRoomTypes] = useState([]);
   const [loading, setLoading] = useState(true); // State to track loading
   const [rooms, setRooms] = useState([]);
   
   useEffect(() => {
-    const initializeAndFetch = async () => {
-      try {
-        const fetchedRooms = await dbService.getRooms();
-        setRooms(fetchedRooms); 
+  const initializeAndFetch = async () => {
+    try {
+      const fetchedRooms = await dbService.getRooms(hotelName);
+      if (Array.isArray(fetchedRooms)) {
+        setRooms(fetchedRooms);
         const uniqueTypes = [...new Set(fetchedRooms.map(room => room.type))];
         setRoomTypes(uniqueTypes);
-      } catch (err) {
-        console.error('Error in DBb fdlow:', err);
-      }finally {
-        setLoading(false); 
+      } else {
+        console.error('Fetched data is not an array:', fetchedRooms);
+        setRooms([]);
+        setRoomTypes([]);
       }
-    };
-    initializeAndFetch();
-  }, []);
+    } catch (err) {
+      console.error('Error in DB flow:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  initializeAndFetch();
+}, []);
+
 
   const loadHistory = async () => {
     try{
     setLoading(true);
     const data = await dbService.getHistoryRooms(); 
-    console.log('Fetched history:', data);
     navigation.navigate('CheckoutHistory', { historyData: data });
     }catch (error) {
       console.error('Failed to fetch booked rooms:', error);
@@ -36,6 +46,11 @@ const HomeScreen = ({ navigation }) => {
       setLoading(false);
     }
   };
+
+  const GotoLoginPage = async () =>{
+    navigation.navigate('LogIn',{hotelName});
+  }
+
 const fetchBookedRooms = async () => {
   try {
     setLoading(true);
@@ -96,7 +111,7 @@ const fetchBookedRooms = async () => {
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.item}
-              onPress={() => navigation.navigate('RoomType', { type: item })}
+              onPress={() => navigation.navigate('RoomType', { type: item,hotelName: hotelName })}
             >
               <Text style={styles.text}>{item}</Text>
             </TouchableOpacity>
@@ -111,9 +126,28 @@ const fetchBookedRooms = async () => {
       <TouchableOpacity style={styles.bookedButton} onPress={fetchCleaningRooms}>
         <Text style={styles.bookedButtonText}>Rooms Under Cleaning</Text>
       </TouchableOpacity>
-            <TouchableOpacity style={styles.bookedButton} onPress={loadHistory}>
+      <TouchableOpacity style={styles.bookedButton} onPress={loadHistory}>
         <Text style={styles.bookedButtonText}>View Checkout History</Text>
       </TouchableOpacity>
+     <View style={styles.buttonRow}>
+  <TouchableOpacity style={styles.bookedButton} onPress={GotoLoginPage}>
+    <Text style={styles.bookedButtonText}>Logout</Text>
+  </TouchableOpacity>
+
+  <TouchableOpacity
+    style={[styles.bookedButton, { marginLeft: 10 }]}
+    onPress={() => {
+      navigation.navigate('LogIn', {
+        fromChangePassword: true,
+        hotelCode: hotelName, // or the current hotelCode variable
+      });
+    }}
+  >
+    <Text style={styles.bookedButtonText}>Change Password</Text>
+  </TouchableOpacity>
+</View>
+
+      
     </View>
 
     </View>
@@ -129,6 +163,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     alignSelf: 'center',
   },
+  buttonRow: {
+  flexDirection: 'row',
+  justifyContent: 'center',
+  marginTop: 20,
+},
+
   item: {
     padding: 20,
     backgroundColor: '#eee',

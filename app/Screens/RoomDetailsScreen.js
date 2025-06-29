@@ -1,7 +1,6 @@
 // RoomDetailsScreen.js
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, Button, Image, Alert, StyleSheet, TouchableOpacity,Modal,ActivityIndicator} from 'react-native';
-import { Camera } from 'expo-camera';
 import dbService from '../Services/dbService'; // Make sure path is correct
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -14,13 +13,15 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
-import * as MediaLibrary from 'expo-media-library';
+// import * as MediaLibrary from 'expo-media-library';
+// import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 
 
 
 
 const RoomDetailsScreen = ({ route }) => {
   const { room } = route.params;
+  const { hotelName } = route.params;
   const navigation = useNavigation(); 
   const [tenantName, setTenantName] = useState('');
   const [tenantPhone, setTenantPhone] = useState('');
@@ -28,6 +29,8 @@ const RoomDetailsScreen = ({ route }) => {
   const [tenantAdults, setTenantAdults] = useState('');
   const [tenantKids, setTenantKids] = useState('');
   const [tenantPurpose, setTenantPurpose] = useState('');
+    const [tenantStartDate, setTenantStartDate] = useState(null);
+  const [tenantEndDate, setTenantEndDate] = useState(null);
   const [roomNumber, setRoomNumber] = useState();
   const [roomType, setRoomType] = useState();
   const [roomStatus, setRoomStatus] = useState();
@@ -60,8 +63,6 @@ const [editEndDate, setEditEndDate] = useState('');
 const [editPrice, setEditPrice] = useState('');
 const [editPaymentMode, setEditPaymentMode] = useState('');
 
-
-
  const onStartDateChange = (event, selectedDate) => {
     setShowStartPicker(false);
     // if (selectedDate && selectedDate >= today) {
@@ -78,30 +79,12 @@ const [editPaymentMode, setEditPaymentMode] = useState('');
       setEndDate(selectedDate);
     }
   };
-  const [hasCameraPermission, setHasCameraPermission] = useState(null);
-  const [hasMediaLibraryPermission, setHasMediaLibraryPermission] = useState(null);
-  const [photoUri, setPhotoUri] = useState(null);
-  const cameraRef = useRef(null);
-
-useEffect(() => {
-  (async () => {
-    try {
-      const { status: cameraStatus } = await Camera.requestCameraPermissionsAsync();
-      const { status: mediaStatus } = await MediaLibrary.requestPermissionsAsync();
-
-      setHasCameraPermission(cameraStatus === 'granted');
-      setHasMediaLibraryPermission(mediaStatus === 'granted');
-    } catch (error) {
-      console.error("Permission error:", error);
-    }
-  })();
-}, []);
-
 
   useEffect(() => {
+   
   if (memberDetails) {
     setEditName(memberDetails.name || '');
-    setEditPhone(memberDetails.phone || '');
+    setEditPhone(memberDetails.phone?.toString() || '');
     setEditAddress(tenantAddress || '');
     setEditAdults(tenantAdults?.toString() || '');
     setEditKids(tenantKids?.toString() || '');
@@ -117,9 +100,9 @@ useEffect(() => {
   useEffect(() => {
     (async () => {
       try {
-        const { status, canAskAgain, granted } = await Camera.requestCameraPermissionsAsync();
-        //console.log('Camera Permission Response:', { status, canAskAgain, granted });
-        setHasPermission(status === 'granted');
+        // const { status, canAskAgain, granted } = await Camera.requestCameraPermissionsAsync();
+        // //console.log('Camera Permission Response:', { status, canAskAgain, granted });
+        // setHasPermission(status === 'granted');
       } catch (error) {
         //console.error('Error requesting camera permission:', error);
       }
@@ -133,7 +116,8 @@ useEffect(() => {
 
   const loadRoom = async () => {
     try {
-      const result = await dbService.getRoomsByID(room.id);
+      const result = await dbService.getRoomsByID(hotelName,room.id);
+      
       if (!result || result.length === 0) {
         Alert.alert('Room not found', `No details found for  room ID: ${room.id}`);
         return;
@@ -143,17 +127,19 @@ useEffect(() => {
       setRoomNumber(latestRoom.number || '');
       setRoomType(latestRoom.type || '');
       setMemberDetails({
-        name: latestRoom.membername || '',
-        phone: latestRoom.memberphone || '',
+        name: latestRoom.memberName || '',
+        phone: latestRoom.memberPhone || '',
       });
-      setTenantAddress(latestRoom.memberaddress);
-      setTenantAdults(latestRoom.adultscount);
-      setTenantKids(latestRoom.kidscount);
-      setTenantPurpose(latestRoom.visitpurpose);
-      setStartDate(latestRoom.startdate);
-      setEndDate(latestRoom.enddate);
+      setTenantAddress(latestRoom.memberAddress);
+      setTenantAdults(latestRoom.adultsCount);
+      setTenantKids(latestRoom.kidsCount);
+      setTenantPurpose(latestRoom.visitPurpose);
+      setTenantStartDate(latestRoom.startDate);
+      setTenantEndDate(latestRoom.endDate);
+      setStartDate(latestRoom.startDate);
+      setEndDate(latestRoom.endDate);
       setPrice(latestRoom.price);
-      setmodeOfPayment(latestRoom.modeofpayment);
+      setmodeOfPayment(latestRoom.modeOfPayment);
     } catch (error) {
       console.error('Failed to load room:', error);
       Alert.alert('Error', 'An error occurred while loading room details.');
@@ -169,48 +155,34 @@ useEffect(() => {
       Alert.alert('Please fill in all fields');
       return;
     }
-      await dbService.addMemberToRoom(room.id, roomNumber,roomType,'Booking',tenantName, tenantPhone,tenantAddress,tenantAdults,tenantKids,tenantPurpose,startDate,endDate,price,modeOfPayment);
+      await dbService.addMemberToRoom(hotelName,room.id, roomNumber,roomType,'Booking',tenantName, tenantPhone,tenantAddress,tenantAdults,tenantKids,tenantPurpose,startDate,endDate,price,modeOfPayment);
       setLoading(false);
-      showAlertWithNavigationReset(navigation,'Booking Submitted','Room has been booked successfully.','Hotel Information','Home');
+      showAlertWithNavigationReset(
+        navigation,
+        'Booking Submitted',
+        'Room has been booked successfully.',
+        'Home', 
+        { hotelName } 
+      );
+
     };
 
 
   const checkOut = async () => {
     setLoading(true);
-    await dbService.addMemberToRoom(room.id, roomNumber,roomType,'CheckOut',tenantName, tenantPhone,tenantAddress,tenantAdults,tenantKids,tenantPurpose,startDate,endDate,price,modeOfPayment);
+    await dbService.addMemberToRoom(hotelName,room.id, roomNumber,roomType,'CheckOut',tenantName, tenantPhone,tenantAddress,tenantAdults,tenantKids,tenantPurpose,startDate,endDate,price,modeOfPayment);
     setLoading(false);
-    showAlertWithNavigationReset(navigation,'Chekout Done','Checkout is done successfully.','Hotel Information','Home');
+    showAlertWithNavigationReset(navigation,'Chekout Done','Check out is done successfully.','Hotel Information','Home',{ hotelName });
   }
 
   const chnageToAvailable = async () => {
     setLoading(true);
-    await dbService.addMemberToRoom(room.id, roomNumber,roomType,'Available','', '','','','','','','','','','');
+    await dbService.addMemberToRoom(hotelName,room.id, roomNumber,roomType,'Available','', '','','','','','','','','','');
     setLoading(false);
-    showAlertWithNavigationReset(navigation,'Available','This room will be available from now.','Hotel Information','Home');
+    showAlertWithNavigationReset(navigation,'Available','This room will be available from now.','Hotel Information','Home',{ hotelName } );
   }
 
-  const takePicture = async () => {
-    if (cameraRef.current) {
-      try {
-        const photo = await cameraRef.current.takePictureAsync();
-        setCapturedImage(photo.uri);
-      } catch (e) {
-        console.error('Error taking picture:', e);
-      }
-    }
-  };
-
-    const takePhoto = async () => {
-    if (cameraRef.current) {
-      const photo = await cameraRef.current.takePictureAsync();
-      setPhotoUri(photo.uri);
-
-      if (hasMediaLibraryPermission) {
-        await MediaLibrary.saveToLibraryAsync(photo.uri);
-      }
-    }
-  };
-
+  
 const formatDate = (date) => {
   if (!date) return '';
 
@@ -221,17 +193,7 @@ const formatDate = (date) => {
   return parsedDate.toLocaleDateString('en-US', options);
 };
 
-  if (hasCameraPermission === null || hasMediaLibraryPermission === null) {
-    console.log("Camera:", hasCameraPermission);
-console.log("Media Library:", hasMediaLibraryPermission);
-
-    return <View><Text>Requesting permissions...</Text></View>;
-  }
-
-  if (!hasCameraPermission) {
-    return <View><Text>No access to camera.</Text></View>;
-  }
-
+  
 return (
 <KeyboardAvoidingView
   behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -312,7 +274,7 @@ return (
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 }}>
                 <Button title="Cancel" onPress={() => setEditModalVisible(false)} />
                 <Button title="Save" onPress={async () => {
-              await dbService.addMemberToRoom(room.id, room.number,room.type,room.status,editName,editPhone,editAddress,editAdults,editKids,editPurpose,editStartDate,editEndDate,editPrice,editPaymentMode);             // await dbService.updateMemberDetailsOnly(
+              await dbService.addMemberToRoom(hotelName,room.id, room.number,room.type,room.status,editName,editPhone,editAddress,editAdults,editKids,editPurpose,editStartDate,editEndDate,editPrice,editPaymentMode);             // await dbService.updateMemberDetailsOnly(
               setTenantName(editName);
               setTenantPhone(editPhone);
               setTenantAddress(editAddress);
@@ -366,22 +328,22 @@ return (
 
     <Text>
       <Text style={{ fontWeight: 'bold' }}>Start Date: </Text>
-      {formatDate(startDate)}
+      {formatDate(tenantStartDate)}
     </Text>
 
     <Text>
       <Text style={{ fontWeight: 'bold' }}>End Date: </Text>
-      {formatDate(endDate)}
+      {formatDate(tenantEndDate)}
     </Text>
 
     <Text>
       <Text style={{ fontWeight: 'bold' }}>Price: </Text>
-      {price}
+      {room.price}
     </Text>
 
     <Text>
       <Text style={{ fontWeight: 'bold' }}>Mode of Payment: </Text>
-      {modeOfPayment}
+      {room.modeOfPayment}
     </Text>
 
     <View style={{ marginTop: 40, alignItems: 'center' }}>
@@ -504,21 +466,15 @@ return (
       
           </View>
 
-          <View style={{ flex: 1 }}>
-          <Camera
-            ref={cameraRef}
-            style={{ flex: 1 }}
-            type={Camera.Constants.Type.back}
-            ratio="16:9"
-          />
-          <Button title="Capture Photo" onPress={takePhoto} />
-          {photoUri && (
-            <Image
-              source={{ uri: photoUri }}
-              style={{ width: 300, height: 300, alignSelf: 'center', margin: 10 }}
-            />
-          )}
-          </View>
+  {/* <View style={styles.containerr}>
+      <CameraView style={styles.camera} facing={facing}>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
+            <Text style={styles.text}>Flip Camera</Text>
+          </TouchableOpacity>
+        </View>
+      </CameraView>
+    </View> */}
 
 
           {/* Radio Buttons for Duration */}
@@ -615,15 +571,15 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 5,
   },
-  cameraContainer: {
-    height: 300,
-    marginTop: 20,
-    overflow: 'hidden',
-    borderRadius: 10,
-  },
-  camera: {
-    flex: 1,
-  },
+  // cameraContainer: {
+  //   height: 300,
+  //   marginTop: 20,
+  //   overflow: 'hidden',
+  //   borderRadius: 10,
+  // },
+  // camera: {
+  //   flex: 1,
+  // },
   imagePreview: {
     width: 150,
     height: 150,
@@ -660,5 +616,32 @@ picker: {
   height: 100,
   width: '100%',
 },
+containerr: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  message: {
+    textAlign: 'center',
+    paddingBottom: 10,
+  },
+  // camera: {
+  //   flex: 1,
+  // },
+  buttonContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: 'transparent',
+    margin: 64,
+  },
+  button: {
+    flex: 1,
+    alignSelf: 'flex-end',
+    alignItems: 'center',
+  },
+  text: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+  },
 
 });

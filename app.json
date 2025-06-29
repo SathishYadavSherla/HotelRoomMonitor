@@ -2,7 +2,7 @@
   "expo": {
     "name": "HRM",
     "sdkVersion": "52.0.0",
-    "slug": "Hotel Room Monitor",
+    "slug": "HotelRoomMonitor",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "../Images/HRM.png",

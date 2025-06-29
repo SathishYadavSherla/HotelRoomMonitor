@@ -1,44 +1,101 @@
 // dbService.js
 
 import * as SQLite from 'expo-sqlite';
-import { ROOMS } from '../../constants/mockdata'; // Adjust path as needed
-//https://sheetdb.io/api/v1/wqaq7b4sdxq6k
+import { ROOMS } from '../../constants/mockdata'; 
 import { View, Text, TextInput, Button, Image, Alert, StyleSheet, TouchableOpacity } from 'react-native';
-const SHEET_API = 'https://script.google.com/macros/s/AKfycbzDdbvWCOG28eaNZM2XGXamezROq3qS87WZEpABf0Pf00j6ypjlTFXvlXarTlJkaOOkjQ/exec'; 
+const SHEET_API = 'https://script.google.com/macros/s/AKfycbxZ7__muNo39A4s73xPCaBPD4EaDaEtktGWRa93nTjr85iYRC8cSw1QwIJp4I-TJ8m-kg/exec';
+
+
+
 
 const dbService = {
-  getRooms: async () => {
+  createSheetsAndSaveCredentials : async (hotelName, username, password) => {
+    try {
+        const response = await fetch(SHEET_API, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ hotelName, username, password }),
+        });
+
+        return await response.json();
+      } catch (error) {
+        console.error('Error calling SHEET_API:', error);
+        throw error;
+      }
+  },
+updatePassword: async (hotelName, username, newPassword,password) => {
   try {
-    const response = await fetch(SHEET_API);
+    const body = {
+      action: 'UpdatePassword',
+      hotelName,
+      username,
+      newPassword,
+      password
+    };
+
+    const response = await fetch(SHEET_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
     return await response.json();
   } catch (error) {
-    console.error('Error fetching ro oms:', error);
+    console.error('Error updating password:', error);
+    return { success: false, message: 'Server error' };
+  }
+},
+
+
+getRooms: async (hotelName) => {
+  try {
+    const url = `${SHEET_API}?hotelName=${encodeURIComponent(hotelName)}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    // Ensure response is an array
+    if (Array.isArray(data)) {
+      return data;
+    } else {
+      console.error('Unexpected response format:', data);
+      return []; // fallback to empty array
+    }
+  } catch (error) {
+    console.error('Error fetching rooms:', error);
     return [];
   }
 },
 
-getRoomsByType: async (type) => {
+
+
+getRoomsByType: async (hotelName, type) => {
   try {
-    const response = await fetch(`${SHEET_API}?type=${type}`);
+    const url = `${SHEET_API}?hotelName=${encodeURIComponent(hotelName)}&type=${encodeURIComponent(type)}`;
+    const response = await fetch(url);
     return await response.json();
   } catch (error) {
-    console.error('Error fetching ro om by type:', error);
+    console.error('Error fetching room by type:', error);
   }
 },
 
-getRoomsByID: async (roomId) => {
+
+getRoomsByID: async (hotelName, roomId) => {
   try {
-    const response = await fetch(`${SHEET_API}?id=${roomId}`);
-    const json = await response.json();
-    return json;
+    const url = `${SHEET_API}?hotelName=${encodeURIComponent(hotelName)}&id=${encodeURIComponent(roomId)}`;
+    const response = await fetch(url);
+    return await response.json();
   } catch (error) {
-    console.error('Error fetching roo m by ID:', error);
+    console.error('Error fetching ro om by ID:', error);
   }
-},
+}
+,
 
-getHistoryRooms: async () => {
+getHistoryRooms: async (hotelName) => {
   try {
-    const response = await fetch(`${SHEET_API}?history=true`);
+    const url = `${SHEET_API}?hotelName=${encodeURIComponent(hotelName)}&history=true`;
+    const response = await fetch(url);
     return await response.json();
   } catch (error) {
     console.error('Error fetching history rooms:', error);
@@ -47,8 +104,29 @@ getHistoryRooms: async () => {
 },
 
 
+  registerHotel : async (hotelName, place, mobile, email, owner) => {
+  const payload = {
+    action: 'RegisterHotel',
+    hotelName,
+    place,
+    mobile,
+    email,
+    owner
+  };
+  const response = await fetch(SHEET_API, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return await response.json();
+},
+
 
 addMemberToRoom: async (
+  hotelName,
   roomId,
   number,
   type,
@@ -66,6 +144,7 @@ addMemberToRoom: async (
 ) => {
   try {
     const body = {
+      hotelName,
       roomId,
       number,
       type,
@@ -81,7 +160,6 @@ addMemberToRoom: async (
       price,
       modeOfPayment
     };
-    console.log('request:',body)
     const response = await fetch(SHEET_API, {
       method: 'POST',
       body: JSON.stringify(body),
@@ -93,13 +171,13 @@ addMemberToRoom: async (
     const result = await response.json();
     return result;
   } catch (error) {
-    console.error('Error posti n g data:', error);
+    console.error('Error posting data::', error);
   }
 },
 
 updateMemberDetailsOnly: async (
   roomId,
-number,type,status,
+  number,type,status,
   memberName,
   memberPhone,
   memberAddress,
@@ -113,7 +191,7 @@ number,type,status,
 ) => {
   try {
     const body = {
-      action: 'updateMemberDetails',
+      action: 'updateMemberDetails',  
       roomId,number,type,status,
       memberName,
       memberPhone,
@@ -133,10 +211,9 @@ number,type,status,
       body: JSON.stringify(body)
     });
 
-    console.log('edited data',body);
     return await response.json();
   } catch (error) {
-    console.error('Error updating member details:', error);
+    console.error('Error updating memb r details:', error);
   }
 }
 

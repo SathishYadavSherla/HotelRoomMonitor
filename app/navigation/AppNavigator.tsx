@@ -1,71 +1,63 @@
-//AppNavigator.js
 import React from 'react';
-import { createDrawerNavigator } from '@react-navigation/drawer';
+import { createDrawerNavigator, DrawerNavigationOptions } from '@react-navigation/drawer';
 import { createStackNavigator } from '@react-navigation/stack';
-import HomeScreen from '../Screens/HomeScreen';  // Adjust path as needed
-import RoomTypeScreen from '../Screens/RoomTypeScreen';  // Adjust path as needed
-import RoomDetailsScreen from '../Screens/RoomDetailsScreen';  // Adjust path as needed
-import AboutUsScreen from '../Screens/AboutUsScreen';  // Adjust path as needed
-import ContactUsScreen from '../Screens/ContactUsScreen';  // Adjust path as needed
-import BookedRooms from '../Screens/BookedRooms';  // Adjust path as needed
+import { getFocusedRouteNameFromRoute, RouteProp, ParamListBase } from '@react-navigation/native';
+import { TouchableOpacity, Text } from 'react-native';
+
+
+import HomeScreen from '../Screens/HomeScreen';
+import RoomTypeScreen from '../Screens/RoomTypeScreen';
+import RoomDetailsScreen from '../Screens/RoomDetailsScreen';
+import AboutUsScreen from '../Screens/AboutUsScreen';
+import ContactUsScreen from '../Screens/ContactUsScreen';
+import BookedRooms from '../Screens/BookedRooms';
 import CheckoutHistoryScreen from '../Screens/CheckoutHistoryScreen';
+import LoginScreen from '../Screens/LoginScreen';
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
 
-// HomeStack containing RoomTypeScreen and RoomDetailsScreen
+// Home stack with nested screens
 const HomeStack = () => (
   <Stack.Navigator>
-    <Stack.Screen
-      name="Home"
-      component={HomeScreen}
-      options={{ headerShown: false }} 
-    />
-    <Stack.Screen
-      name="RoomType"
-      component={RoomTypeScreen}
-      options={{ title: 'Room Type' }}  
-    />
-    <Stack.Screen
-      name="RoomDetails"
-      component={RoomDetailsScreen}
-      options={{ title: 'Room Details' }}  
-    />
-    <Stack.Screen
-      name="BookedRooms"
-      component={BookedRooms}
-      options={{ title: 'Booked Rooms' }}  
-    />
-    <Stack.Screen
-      name="CheckoutHistory"
-      component={CheckoutHistoryScreen}
-      options={{ title: 'Checkout History' }}  
-    />
-    
+    <Stack.Screen name="LogIn" component={LoginScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="RoomType" component={RoomTypeScreen} options={{ title: 'Room Type' }} />
+    <Stack.Screen name="RoomDetails" component={RoomDetailsScreen} options={{ title: 'Room Details' }} />
+    <Stack.Screen name="BookedRooms" component={BookedRooms} options={{ title: 'Booked Rooms' }} />
+    <Stack.Screen name="CheckoutHistory" component={CheckoutHistoryScreen} options={{ title: 'Checkout History' }} />
   </Stack.Navigator>
 );
 
+// Function to control header visibility
+const getDrawerOptions = (route: RouteProp<ParamListBase, string>): DrawerNavigationOptions => {
+  const routeName = getFocusedRouteNameFromRoute(route) ?? 'LogIn';
 
-// Drawer Navigator containing the main screens
+  const showHeader = routeName === 'Home';
+
+  return {
+    headerShown: showHeader,
+    headerTitle: 'Hotel Information',
+    headerTitleAlign: 'center',
+    headerStyle: { backgroundColor: '#90746e' },
+    headerTintColor: '#fff',
+    headerTitleStyle: { fontWeight: 'bold' },
+  };
+};
+
+// Main drawer navigation
 const AppNavigator = () => {
   return (
     <Drawer.Navigator initialRouteName="Hotel Information">
       <Drawer.Screen
         name="Hotel Information"
         component={HomeStack}
-        options={{ 
-        headerShown: true,
-        headerTitleAlign: 'center',
-        headerStyle: { backgroundColor: '#90746e' },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: 'bold' },
-         }}  // Hides header for the Home Stack
+        options={({ route }) => getDrawerOptions(route)}
       />
       <Drawer.Screen name="About Us" component={AboutUsScreen} />
       <Drawer.Screen name="Contact Us" component={ContactUsScreen} />
     </Drawer.Navigator>
   );
 };
-
 
 export default AppNavigator;
