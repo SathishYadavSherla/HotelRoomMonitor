@@ -29,7 +29,7 @@ const RoomTypeScreen = ({ route, navigation }) => {
   useEffect(() => {
     const loadRooms = async () => {
       try {
-        const dbRooms = await dbService.getRoomsByType(hotelName,type);
+        const dbRooms = await dbService.getRoomsByType(hotelName, type);
         setRooms(dbRooms);
       } catch (error) {
         console.error('Failed to load rooms:', error);
@@ -58,19 +58,19 @@ const RoomTypeScreen = ({ route, navigation }) => {
     return acc;
   }, {});
 
-const shouldShowCheckoutIcon = (room) => {
-  if (room.status !== 'Booked' || !room.enddate) return false;
+  const shouldShowCheckoutIcon = (room) => {
+    if (room.status !== 'Booked' || !room.enddate) return false;
 
-  const endDate = new Date(room.enddate);
-  if (isNaN(endDate.getTime())) {
-    console.warn('Invalid endDate format:', room.enddate);
-    return false;
-  }
-  const now = new Date();
-  const timeDiffMs = endDate - now;
-  const timeDiffHours = timeDiffMs / (1000 * 60 * 60);
-  return timeDiffHours <= 3 && timeDiffHours > 0;
-};
+    const endDate = new Date(room.enddate);
+    if (isNaN(endDate.getTime())) {
+      console.warn('Invalid endDate format:', room.enddate);
+      return false;
+    }
+    const now = new Date();
+    const timeDiffMs = endDate - now;
+    const timeDiffHours = timeDiffMs / (1000 * 60 * 60);
+    return timeDiffHours <= 3 && timeDiffHours > 0;
+  };
 
 
   return (
@@ -117,28 +117,28 @@ const shouldShowCheckoutIcon = (room) => {
           <View style={styles.floorGroup}>
             <Text style={styles.floorTitle}>{floor}</Text>
             {groupedByFloor[floor].map((room) => {
-              
+
               const showCheckoutWarning = shouldShowCheckoutIcon(room);
 
               return (
                 <TouchableOpacity
                   key={room.id}
                   style={[styles.item, getStatusStyle(room.status)]}
-                  onPress={() => navigation.navigate('RoomDetails', { room,hotelName })}
+                  onPress={() => navigation.navigate('RoomDetails', { room, hotelName })}
                 >
                   <View style={styles.roomRow}>
                     <Text style={styles.text}>
                       Room {room.number} - {room.status}
                     </Text>
-                    {showCheckoutWarning && 
-                    (
-                      <Icon
-                        name="clock-alert"
-                        size={20}
-                        color="#e67e22"
-                        style={styles.warningIcon}
-                      />
-                    )}
+                    {showCheckoutWarning &&
+                      (
+                        <Icon
+                          name="clock-alert"
+                          size={20}
+                          color="#e67e22"
+                          style={styles.warningIcon}
+                        />
+                      )}
                   </View>
                 </TouchableOpacity>
               );

@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, ScrollView,TouchableOpacity} from 'react-native';
-import  { useLayoutEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, ScrollView, TouchableOpacity } from 'react-native';
+import { useLayoutEffect } from 'react';
 
-const BookedRooms = ({ route , navigation}) => {
+const BookedRooms = ({ route, navigation }) => {
   const { rooms } = route.params;
   const { title } = route.params;
   useLayoutEffect(() => {
@@ -11,25 +11,25 @@ const BookedRooms = ({ route , navigation}) => {
     });
   }, [navigation, title]);
   const renderItem = ({ item }) => (
-      <TouchableOpacity
+    <TouchableOpacity
       onPress={() => navigation.navigate('RoomDetails', { room: item })}
       style={styles.card}
     >
-      
+
       <Text style={styles.title}>Room {item.number} ({item.type})</Text>
       <Text style={styles.status}>Status: {item.status}</Text>
       {title === 'Booked Rooms' && (<>
-      <View style={styles.section}>
-        <Text style={styles.label}>Member Name:</Text>
-        <Text style={styles.value}>{item.memberName}</Text>
-      </View>
-      <View style={styles.section}>
-        <Text style={styles.label}>Phone:</Text>
-        <Text style={styles.value}>{item.memberPhone}</Text>
-      </View>
+        <View style={styles.section}>
+          <Text style={styles.label}>Member Name:</Text>
+          <Text style={styles.value}>{item.memberName}</Text>
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.label}>Phone:</Text>
+          <Text style={styles.value}>{item.memberPhone}</Text>
+        </View>
       </>
       )}
-      
+
     </TouchableOpacity>
   );
 

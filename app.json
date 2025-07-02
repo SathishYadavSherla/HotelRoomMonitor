@@ -13,8 +13,13 @@
     "ios": {
       "supportsTablet": true,
       "permissions": [
+        "CAMERA",
         "CAMERA"
-      ]
+      ],
+      "bundleIdentifier": "y",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "permissions": [
