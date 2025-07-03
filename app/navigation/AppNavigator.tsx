@@ -13,6 +13,7 @@ import ContactUsScreen from '../Screens/ContactUsScreen';
 import BookedRooms from '../Screens/BookedRooms';
 import CheckoutHistoryScreen from '../Screens/CheckoutHistoryScreen';
 import LoginScreen from '../Screens/LoginScreen';
+import CustomDrawerContent from '../Screens/CustomDrawerContent';
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
@@ -48,7 +49,8 @@ const getDrawerOptions = (route: RouteProp<ParamListBase, string>): DrawerNaviga
 // Main drawer navigation
 const AppNavigator = () => {
   return (
-    <Drawer.Navigator initialRouteName="Hotel Information">
+    <Drawer.Navigator initialRouteName="Hotel Information"
+      drawerContent={(props) => <CustomDrawerContent {...props} />}>
       <Drawer.Screen
         name="Hotel Information"
         component={HomeStack}
@@ -56,6 +58,8 @@ const AppNavigator = () => {
       />
       <Drawer.Screen name="About Us" component={AboutUsScreen} />
       <Drawer.Screen name="Contact Us" component={ContactUsScreen} />
+      {/* <Drawer.Screen name="Logout" component={LoginScreen} />
+      <Drawer.Screen name="Change Password" component={ContactUsScreen} /> */}
     </Drawer.Navigator>
   );
 };

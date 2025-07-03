@@ -6,17 +6,23 @@ import { BackHandler } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import AddRoomModal from './AddRoomModal'; // adjust the path if needed
+import { useHotel } from './HotelContext';
 
 
 
 const HomeScreen = ({ route, navigation }) => {
 
   const { hotelName } = route.params ?? {};
+
   const [roomTypes, setRoomTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [rooms, setRooms] = useState([]);
   const [addRoomVisible, setaddRoomVisible] = useState(false);
+  const { setHotelName } = useHotel();
 
+  useEffect(() => {
+    setHotelName(hotelName);
+  }, []);
   useFocusEffect(
     useCallback(() => {
       initializeAndFetch();
@@ -165,7 +171,10 @@ const HomeScreen = ({ route, navigation }) => {
         <TouchableOpacity style={styles.bookedButton} onPress={loadHistory}>
           <Text style={styles.bookedButtonText}>View Checkout History</Text>
         </TouchableOpacity>
-        <View style={styles.buttonRow}>
+        <TouchableOpacity style={[styles.bookedButton, { marginLeft: 10 }]} onPress={() => setaddRoomVisible(true)}>
+          <Text style={styles.bookedButtonText}>Add Rooms</Text>
+        </TouchableOpacity>
+        {/* <View style={styles.buttonRow}>
           <TouchableOpacity style={styles.bookedButton} onPress={GotoLoginPage}>
             <Text style={styles.bookedButtonText}>Logout</Text>
           </TouchableOpacity>
@@ -175,7 +184,7 @@ const HomeScreen = ({ route, navigation }) => {
             onPress={() => {
               navigation.navigate('LogIn', {
                 fromChangePassword: true,
-                hotelCode: hotelName, // or the current hotelCode variable
+                hotelCode: hotelName,
               });
             }}
           >
@@ -184,9 +193,7 @@ const HomeScreen = ({ route, navigation }) => {
           <TouchableOpacity style={[styles.bookedButton, { marginLeft: 10 }]} onPress={() => setaddRoomVisible(true)}>
             <Text style={styles.bookedButtonText}>Add Rooms</Text>
           </TouchableOpacity>
-        </View>
-
-
+        </View> */}
       </View>
       <AddRoomModal
         addRoomVisible={addRoomVisible}
