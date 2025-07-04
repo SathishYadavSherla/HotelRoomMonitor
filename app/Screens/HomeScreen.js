@@ -108,6 +108,7 @@ const HomeScreen = ({ route, navigation }) => {
       navigation.navigate('BookedRooms', {
         rooms: bookedRooms,
         title: 'Booked Rooms',
+        hotelName: hotelName,
       });
     } catch (error) {
       console.error('Error fetching booked rooms:', error);
@@ -120,9 +121,12 @@ const HomeScreen = ({ route, navigation }) => {
     try {
       setLoading(true);
       const bookedRooms = rooms.filter(room => room.status === 'Cleaning');
+      console.log("Rooms", bookedRooms);
+
       navigation.navigate('BookedRooms', {
         rooms: bookedRooms,
         title: 'Rooms Under Cleaning',
+        hotelName: hotelName,
       });
     } catch (error) {
       console.error('Failed to fetch booked rooms:', error);
@@ -162,7 +166,8 @@ const HomeScreen = ({ route, navigation }) => {
       )}
 
       <View style={styles.bottomButtons}>
-        <TouchableOpacity style={styles.bookedButton} onPress={fetchBookedRooms}>
+        <TouchableOpacity style={styles.bookedButton} onPress={fetchBookedRooms}//onPress={() => navigation.navigate('Camera')}//
+        >
           <Text style={styles.bookedButtonText}>Booked Rooms</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.bookedButton} onPress={fetchCleaningRooms}>

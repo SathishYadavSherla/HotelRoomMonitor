@@ -8,7 +8,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet
+  StyleSheet,
+  Keyboard
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import dbService from '../Services/dbService';
@@ -53,6 +54,7 @@ const AddRoomModal = ({ addRoomVisible, setaddRoomVisible, hotelName, refreshRoo
 
 
   const validateAndSave = async () => {
+    Keyboard.dismiss();
     try {
       setLoading(true);
       const newErrors = roomData.map((room) => ({

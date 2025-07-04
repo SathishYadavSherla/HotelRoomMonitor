@@ -14,6 +14,7 @@ import BookedRooms from '../Screens/BookedRooms';
 import CheckoutHistoryScreen from '../Screens/CheckoutHistoryScreen';
 import LoginScreen from '../Screens/LoginScreen';
 import CustomDrawerContent from '../Screens/CustomDrawerContent';
+import Camera from '../Screens/Camera';
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
@@ -26,6 +27,7 @@ const HomeStack = () => (
     <Stack.Screen name="RoomType" component={RoomTypeScreen} options={{ title: 'Room Type' }} />
     <Stack.Screen name="RoomDetails" component={RoomDetailsScreen} options={{ title: 'Room Details' }} />
     <Stack.Screen name="BookedRooms" component={BookedRooms} options={{ title: 'Booked Rooms' }} />
+    <Stack.Screen name="Camera" component={Camera} options={{ title: 'Camera' }} />
     <Stack.Screen name="CheckoutHistory" component={CheckoutHistoryScreen} options={{ title: 'Checkout History' }} />
   </Stack.Navigator>
 );

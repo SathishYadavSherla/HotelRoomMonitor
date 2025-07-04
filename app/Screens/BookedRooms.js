@@ -5,6 +5,7 @@ import { useLayoutEffect } from 'react';
 const BookedRooms = ({ route, navigation }) => {
   const { rooms } = route.params;
   const { title } = route.params;
+  const { hotelName } = route.params;
   useLayoutEffect(() => {
     navigation.setOptions({
       title: title || 'Booked Rooms',
@@ -12,10 +13,9 @@ const BookedRooms = ({ route, navigation }) => {
   }, [navigation, title]);
   const renderItem = ({ item }) => (
     <TouchableOpacity
-      onPress={() => navigation.navigate('RoomDetails', { room: item })}
+      onPress={() => navigation.navigate('RoomDetails', { room: item, hotelName: hotelName })}
       style={styles.card}
     >
-
       <Text style={styles.title}>Room {item.number} ({item.type})</Text>
       <Text style={styles.status}>Status: {item.status}</Text>
       {title === 'Booked Rooms' && (<>
@@ -35,7 +35,6 @@ const BookedRooms = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* <Text style={styles.header}>Booked Rooms</Text> */}
       {rooms.length === 0 ? (
         <Text style={styles.noData}>No {title} found.</Text>
       ) : (

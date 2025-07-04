@@ -3,10 +3,7 @@
 import * as SQLite from 'expo-sqlite';
 import { ROOMS } from '../../constants/mockdata';
 import { View, Text, TextInput, Button, Image, Alert, StyleSheet, TouchableOpacity } from 'react-native';
-const SHEET_API = 'https://script.google.com/macros/s/AKfycbyYU-a-N7RrHj67MfVn__4iXN7Ks0acgh6Xyej38PIbjSdOZ2q2sDsWa-LzeLTPIZxA0g/exec';
-
-
-
+const SHEET_API = 'https://script.google.com/macros/s/AKfycbykrftbQK30K3pozF2ehB2V2k_PBOw0QILxb1GaNH8eF5ERjXkGYEErJ01qXrriN1yv0Q/exec';
 
 const dbService = {
 
@@ -123,7 +120,7 @@ const dbService = {
       const response = await fetch(url);
       return await response.json();
     } catch (error) {
-      console.error('Error fetching history rooms:', error);
+      console.error('Error fetching history  rooms:', error);
       return [];
     }
   },
@@ -165,7 +162,8 @@ const dbService = {
     startDate,
     endDate,
     price,
-    modeOfPayment
+    modeOfPayment,
+    base64Image
   ) => {
     try {
       const body = {
@@ -183,8 +181,10 @@ const dbService = {
         startDate,
         endDate,
         price,
-        modeOfPayment
+        modeOfPayment,
+        base64Image
       };
+      console.log(body);
       const response = await fetch(SHEET_API, {
         method: 'POST',
         body: JSON.stringify(body),

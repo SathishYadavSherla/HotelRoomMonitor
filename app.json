@@ -5,7 +5,7 @@
     "slug": "HotelRoomMonitor",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "../Images/HRM.png",
+    "icon": "../assets/images/HRM.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -13,7 +13,6 @@
     "ios": {
       "supportsTablet": true,
       "permissions": [
-        "CAMERA",
         "CAMERA"
       ],
       "bundleIdentifier": "y",
@@ -46,6 +45,7 @@
           "backgroundColor": "#ffffff"
         }
       ],
+      "expo-camera",
       "expo-router",
       "expo-sqlite"
     ],

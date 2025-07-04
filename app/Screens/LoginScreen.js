@@ -9,6 +9,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Modal,
+  Keyboard
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import dbService from '../Services/dbService';
@@ -77,7 +78,6 @@ const LoginScreen = ({ navigation }) => {
         }
 
       } else {
-        // Regular login flow
         const response = await dbService.createSheetsAndSaveCredentials(hotelName, username, password);
         if (response.success) {
           navigation.navigate('Home', { hotelName });
@@ -253,7 +253,10 @@ const LoginScreen = ({ navigation }) => {
         </View>
       )}
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
+      <TouchableOpacity style={styles.button} onPress={() => {
+        Keyboard.dismiss();
+        handleLogin();
+      }} disabled={loading}>
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
