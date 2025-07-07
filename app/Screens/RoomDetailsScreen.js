@@ -24,7 +24,7 @@ import {
 } from 'react-native';
 import { Dimensions } from 'react-native';
 import { Linking } from 'react-native';
-
+import ImageViewer from 'react-native-image-zoom-viewer';
 
 
 const RoomDetailsScreen = ({ route }) => {
@@ -73,6 +73,9 @@ const RoomDetailsScreen = ({ route }) => {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef(null);
   const [capturedPhoto, setCapturedPhoto] = useState(null);
+  const [capturedPhoto1, setCapturedPhoto1] = useState(null);
+  const [previewImageUri, setPreviewImageUri] = useState(null);
+  const [captureSide, setCaptureSide] = useState(null);
   const [isCameraVisible, setCameraVisible] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [base64Image, setBase64Image] = useState("");
@@ -80,7 +83,7 @@ const RoomDetailsScreen = ({ route }) => {
 
 
 
-  const takePhoto = async () => {
+  const takePhotos = async () => {
     if (cameraRef.current) {
       try {
         const photo = await cameraRef.current.takePictureAsync({
@@ -105,6 +108,38 @@ const RoomDetailsScreen = ({ route }) => {
       }
     }
   };
+
+  const takePhoto = async () => {
+    if (cameraRef.current) {
+      try {
+        const photo = await cameraRef.current.takePictureAsync({
+          base64: true,
+          quality: 0.3,
+        });
+
+        const base64 = `data:image/jpg;base64,${photo.base64}`;
+        const customFileName = `${hotelName}_${tenantName}_${captureSide}.jpg`;
+        const newPath = FileSystem.documentDirectory + customFileName;
+
+        await FileSystem.copyAsync({ from: photo.uri, to: newPath });
+        await saveImageToGallery(newPath);
+
+        if (captureSide === "front") {
+          setCapturedPhoto(photo.uri);
+        } else if (captureSide === "back") {
+          setCapturedPhoto1(photo.uri); // Make sure this is declared with useState
+        }
+
+        setBase64Image(base64); // optional: can be separate for front/back if needed
+        setImageFileName(customFileName);
+        setShowCamera(false);
+        setCameraVisible(false);
+      } catch (error) {
+        console.error("Error taking picture:", error);
+      }
+    }
+  };
+
 
   const onStartDateChange = (event, selectedDate) => {
     setShowStartPicker(false);
@@ -560,132 +595,111 @@ const RoomDetailsScreen = ({ route }) => {
                     {endDate ? formatDate(endDate) : "Select End Date"}
                   </Text>
                 </TouchableOpacity>
-                <Modal
-                  visible={isCameraVisible}
-                  animationType="slide"
-                  transparent={false}
-                  presentationStyle="fullScreen"
-                  onRequestClose={() => setCameraVisible(false)}
-                >
-                  {showCamera && (
-                    <View style={styles.cameraContainer}>
-                      <CameraView
-                        style={styles.camera}
-                        ref={cameraRef}
-                        flash={flash} // Pass flash mode here
-                      />
-
-                      <View style={styles.captureButtonContainer}>
-                        {/* <TouchableOpacity
-                          style={styles.flashButton}
-                          onPress={() => {
-                            setFlash(
-                              flash === Camera.Constants.FlashMode.off
-                                ? Camera.Constants.FlashMode.on
-                                : Camera.Constants.FlashMode.off
-                            );
-                          }}
-                        >
-                          <Ionicons
-                            name={flash === Camera.Constants.FlashMode.off ? 'flash-off' : 'flash'}
-                            size={28}
-                            color="#fff"
-                          />
-                        </TouchableOpacity> */}
-
-                        <TouchableOpacity style={styles.captureButton} onPress={takePhoto}>
-                          <Text style={styles.buttonText}>Capture</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  )}
-                </Modal>
-
-
-
-                <View style={styles.container}>
-                  {capturedPhoto && (
-                    <View style={styles.previewContainer}>
-                      <Text style={styles.previewLabel}>Captured Image:</Text>
-                      <Image source={{ uri: capturedPhoto }} style={styles.previewImage} />
-                    </View>
-                  )}
-
-                </View>
-
                 {showEndPicker && (
                   <DateTimePicker
-                    value={endDate || new Date()} // fallback if null
+                    value={endDate || new Date()}
                     mode="date"
                     display="default"
                     minimumDate={startDate || new Date()}
                     onChange={onEndDateChange}
                   />
                 )}
-
-
               </View>
-
-              {showDurationOptions && (<View style={{ flexDirection: 'row', marginTop: 30, alignItems: 'center', justifyContent: 'center', visibility: false }}>
-                <TouchableOpacity
-                  style={{ flexDirection: 'row', alignItems: 'center', marginRight: 20 }}
-                  onPress={() => setSelectedDuration('12')}
+              {/* Camera start  */}
+              {previewImageUri && (
+                <Modal
+                  isVisible={!!previewImageUri}
+                  onBackdropPress={() => setPreviewImageUri(null)}
+                  onBackButtonPress={() => setPreviewImageUri(null)}
+                  style={{ margin: 0 }}
                 >
-                  <View style={{
-                    height: 20,
-                    width: 20,
-                    borderRadius: 10,
-                    borderWidth: 1,
-                    borderColor: '#000',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                    {selectedDuration === '12' && (
-                      <View style={{
-                        height: 10,
-                        width: 10,
-                        borderRadius: 5,
-                        backgroundColor: '#000',
-                      }} />
+                  <ImageViewer
+                    imageUrls={[{ url: previewImageUri }]}
+                    enableSwipeDown={true}
+                    onSwipeDown={() => setPreviewImageUri(null)}
+                    onCancel={() => setPreviewImageUri(null)}
+                    renderIndicator={() => null}
+                    renderHeader={() => (
+                      <TouchableOpacity
+                        onPress={() => setPreviewImageUri(null)}
+                        style={{
+                          position: 'absolute',
+                          top: 40,
+                          right: 20,
+                          zIndex: 1,
+                          padding: 10,
+                          backgroundColor: 'rgba(0,0,0,0.6)',
+                          borderRadius: 20,
+                        }}
+                      >
+                        <Text style={{ color: 'white', fontSize: 18 }}>✕</Text>
+                      </TouchableOpacity>
                     )}
-                  </View>
-                  <Text style={{ marginLeft: 8 }}>12 hours</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={{ flexDirection: 'row', alignItems: 'center' }}
-                  onPress={() => setSelectedDuration('24')}
-                >
-                  <View style={{
-                    height: 20,
-                    width: 20,
-                    borderRadius: 10,
-                    borderWidth: 1,
-                    borderColor: '#000',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                    {selectedDuration === '24' && (
-                      <View style={{
-                        height: 10,
-                        width: 10,
-                        borderRadius: 5,
-                        backgroundColor: '#000',
-                      }} />
-                    )}
-                  </View>
-                  <Text style={{ marginLeft: 8 }}>24 hours</Text>
-                </TouchableOpacity>
-              </View>
+                  />
+                </Modal>
               )}
 
-              <View style={{ marginTop: 20, alignItems: 'center' }}>
-                <Button title="Open Camera" onPress={() => {
-                  setCameraVisible(true);
-                  setShowCamera(true);
-                }} />
-              </View>
+              <Modal
+                visible={isCameraVisible}
+                animationType="slide"
+                transparent={false}
+                presentationStyle="fullScreen"
+                onRequestClose={() => setCameraVisible(false)}
+              >
+                {showCamera && (
+                  <View style={styles.cameraContainer}>
+                    <CameraView
+                      style={styles.camera}
+                      ref={cameraRef}
+                    />
 
+                    <View style={styles.captureButtonContainer}>
+                      <TouchableOpacity style={styles.captureButton} onPress={takePhoto}>
+                        <Text style={styles.buttonText}>Capture</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              </Modal>
+
+              <View style={styles.imageRowContainer}>
+                {/* Front Side */}
+                <View style={styles.imageColumn}>
+                  <Button
+                    title="Front"
+                    onPress={() => {
+                      setCaptureSide("front");
+                      setCameraVisible(true);
+                      setShowCamera(true);
+                    }}
+                  />
+                  {capturedPhoto && (
+                    // <Image source={{ uri: capturedPhoto }} style={styles.previewImage} />
+                    <TouchableOpacity onPress={() => setPreviewImageUri(capturedPhoto)}>
+                      <Image source={{ uri: capturedPhoto }} style={styles.previewImage} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Back Side */}
+                <View style={styles.imageColumn}>
+                  <Button
+                    title="Back"
+                    onPress={() => {
+                      setCaptureSide("back");
+                      setCameraVisible(true);
+                      setShowCamera(true);
+                    }}
+                  />
+                  {capturedPhoto1 && (
+                    // <Image source={{ uri: capturedPhoto1 }} style={styles.previewImage} />
+                    <TouchableOpacity onPress={() => setPreviewImageUri(capturedPhoto1)}>
+                      <Image source={{ uri: capturedPhoto1 }} style={styles.previewImage} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+              {/* Camera End */}
 
               <View style={{ marginTop: 20, alignItems: 'center' }}>
                 <Button title="Book Room" onPress={handleBooking} />
@@ -866,12 +880,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  previewImage: {
-    width: 200,
-    height: 200,
-    borderRadius: 10,
-    resizeMode: 'cover',
-  },
+  // previewImage: {
+  //   width: 200,
+  //   height: 200,
+  //   borderRadius: 10,
+  //   resizeMode: 'cover',
+  // },
   image: {
     width: 200,
     height: 200,
@@ -879,4 +893,66 @@ const styles = StyleSheet.create({
     borderColor: '#007bff',   // Color of the border
     borderRadius: 8,          // Optional: rounded corners
   },
+  imageRowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+
+  imageColumn: {
+    alignItems: 'center',
+  },
+
+  previewImage: {
+    width: 150,
+    height: 100,
+    marginTop: 10,
+    borderRadius: 8,
+    resizeMode: 'cover',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  modalContent: {
+    width: 300,
+    height: 300,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+
+  closeButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    zIndex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+
+  closeText: {
+    color: 'white',
+    fontSize: 18,
+  },
+
+  zoomContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  zoomedImage: {
+    width: 300,
+    height: 300,
+    resizeMode: 'contain',
+  },
+
+
 });
