@@ -40,83 +40,83 @@ const CheckoutHistoryScreen = ({ route }) => {
   const renderItem = ({ item }) => (
     <View style={styles.card}>
       <Text style={styles.header}>Room #{item.number} - {item.type}</Text>
-      <Text>👤 {item.membername}</Text>
-      <Text>📞 {item.memberphone}</Text>
-      <Text>🏠 {item.memberaddress}</Text>
-      <Text>🧑‍🤝‍🧑 Adults: {item.adultscount}, Kids: {item.kidscount}</Text>
-      <Text>📅 {new Date(item.startdate).toLocaleDateString()} ➡ {new Date(item.enddate).toLocaleDateString()}</Text>
-      <Text>💳 {item.modeofpayment}</Text>
+      <Text>👤 {item.memberName}</Text>
+      <Text>📞 {item.memberPhone}</Text>
+      <Text>🏠 {item.memberAddress}</Text>
+      <Text>🧑‍🤝‍🧑 Adults: {item.adultsCount}, Kids: {item.kidsCount}</Text>
+      <Text>📅 {new Date(item.startDate).toLocaleDateString()} ➡ {new Date(item.endDate).toLocaleDateString()}</Text>
+      <Text>💳 {item.modeOfPayment}</Text>
       <Text>💰 Price: ₹{item.price}</Text>
-      <Text>📝 Purpose: {item.visitpurpose}</Text>
+      <Text>📝 Purpose: {item.visitPurpose}</Text>
     </View>
   );
 
-// const generatePDF = async () => {
-//   const htmlContent = `
-//     <h1>Checkout History</h1>
-//     ${filteredData
-//       .map(
-//         (item) => `
-//         <div style="margin-bottom:16px;">
-//           <strong>Room #${item.number} (${item.type})</strong><br/>
-//           Name: ${item.membername || 'N/A'} <br/>
-//           Phone: ${item.memberphone || 'N/A'} <br/>
-//           Address: ${item.memberaddress || 'N/A'} <br/>
-//           Guests: ${item.adultscount || 0} Adults, ${item.kidscount || 0} Kids <br/>
-//           Dates: ${new Date(item.startdate).toLocaleDateString()} ➡ ${new Date(item.enddate).toLocaleDateString()} <br/>
-//           Purpose: ${item.visitpurpose || 'N/A'} <br/>
-//           Payment: ${item.modeofpayment || 'N/A'} <br/>
-//           Price: ₹${item.price || 0} <br/>
-//         </div>
-//       `
-//       )
-//       .join('')}
-//   `;
+  // const generatePDF = async () => {
+  //   const htmlContent = `
+  //     <h1>Checkout History</h1>
+  //     ${filteredData
+  //       .map(
+  //         (item) => `
+  //         <div style="margin-bottom:16px;">
+  //           <strong>Room #${item.number} (${item.type})</strong><br/>
+  //           Name: ${item.membername || 'N/A'} <br/>
+  //           Phone: ${item.memberphone || 'N/A'} <br/>
+  //           Address: ${item.memberaddress || 'N/A'} <br/>
+  //           Guests: ${item.adultscount || 0} Adults, ${item.kidscount || 0} Kids <br/>
+  //           Dates: ${new Date(item.startdate).toLocaleDateString()} ➡ ${new Date(item.enddate).toLocaleDateString()} <br/>
+  //           Purpose: ${item.visitpurpose || 'N/A'} <br/>
+  //           Payment: ${item.modeofpayment || 'N/A'} <br/>
+  //           Price: ₹${item.price || 0} <br/>
+  //         </div>
+  //       `
+  //       )
+  //       .join('')}
+  //   `;
 
-//   try {
-//     const { uri } = await Print.printToFileAsync({ html: htmlContent });
-//     const fileName = `Checkout_History_${Date.now()}.pdf`;
-//     const newPath = FileSystem.documentDirectory + fileName;
-
-
-//     await FileSystem.copyAsync({
-//       from: uri,
-//       to: newPath,
-//     });
-
-//     const fileInfo = await FileSystem.getInfoAsync(newPath);
-//     if (!fileInfo.exists) throw new Error('PDF file does not exist');
+  //   try {
+  //     const { uri } = await Print.printToFileAsync({ html: htmlContent });
+  //     const fileName = `Checkout_History_${Date.now()}.pdf`;
+  //     const newPath = FileSystem.documentDirectory + fileName;
 
 
-//     const fileUri = newPath.startsWith('file://') ? newPath : 'file://' + newPath;
+  //     await FileSystem.copyAsync({
+  //       from: uri,
+  //       to: newPath,
+  //     });
 
-//     // 🚫 Skip saving to MediaLibrary if running in Expo Go
-//     if (Platform.OS === 'android' && Constants.appOwnership === 'expo') {
-//       console.log('Running in Expo Go — skipping MediaLibrary, sharing file only');
-//       await Sharing.shareAsync(fileUri);
-//       return;
-//     }
+  //     const fileInfo = await FileSystem.getInfoAsync(newPath);
+  //     if (!fileInfo.exists) throw new Error('PDF file does not exist');
 
-//     // ✅ Only run this in standalone builds
-//     const { status } = await MediaLibrary.requestPermissionsAsync();
-//     if (status !== 'granted') {
-//       alert('Permission to access media library is required!');
-//       return;
-//     }
 
-//     const asset = await MediaLibrary.createAssetAsync(fileUri);
-//     await MediaLibrary.createAlbumAsync('CheckoutHistory', asset, false);
+  //     const fileUri = newPath.startsWith('file://') ? newPath : 'file://' + newPath;
 
-//     alert('✅ PDF saved to device in "CheckoutHistory" album');
+  //     // 🚫 Skip saving to MediaLibrary if running in Expo Go
+  //     if (Platform.OS === 'android' && Constants.appOwnership === 'expo') {
+  //       console.log('Running in Expo Go — skipping MediaLibrary, sharing file only');
+  //       await Sharing.shareAsync(fileUri);
+  //       return;
+  //     }
 
-//     await Sharing.shareAsync(fileUri);
-//   } catch (error) {
-//     console.error('Error exporting PDF:', error);
-//     alert('❌ Failed to generate or share PDF');
-//   }
-// };
-const generatePDF = async () => {
-  const htmlContent = `
+  //     // ✅ Only run this in standalone builds
+  //     const { status } = await MediaLibrary.requestPermissionsAsync();
+  //     if (status !== 'granted') {
+  //       alert('Permission to access media library is required!');
+  //       return;
+  //     }
+
+  //     const asset = await MediaLibrary.createAssetAsync(fileUri);
+  //     await MediaLibrary.createAlbumAsync('CheckoutHistory', asset, false);
+
+  //     alert('✅ PDF saved to device in "CheckoutHistory" album');
+
+  //     await Sharing.shareAsync(fileUri);
+  //   } catch (error) {
+  //     console.error('Error exporting PDF:', error);
+  //     alert('❌ Failed to generate or share PDF');
+  //   }
+  // };
+  const generatePDF = async () => {
+    const htmlContent = `
     <html>
       <head>
         <style>
@@ -161,13 +161,13 @@ const generatePDF = async () => {
               <tr>
                 <td>${item.number || '-'}</td>
                 <td>${item.type || '-'}</td>
-                <td>${item.membername || '-'}</td>
-                <td>${item.memberphone || '-'}</td>
-                <td>${item.memberaddress || '-'}</td>
-                <td>${item.adultscount || 0}A / ${item.kidscount || 0}K</td>
-                <td>${new Date(item.startdate).toLocaleDateString()} ➡ ${new Date(item.enddate).toLocaleDateString()}</td>
-                <td>${item.visitpurpose || '-'}</td>
-                <td>${item.modeofpayment || '-'}</td>
+                <td>${item.memberName || '-'}</td>
+                <td>${item.memberPhone || '-'}</td>
+                <td>${item.memberAddress || '-'}</td>
+                <td>${item.adultsCount || 0}A / ${item.kidsCount || 0}K</td>
+                <td>${new Date(item.startDate).toLocaleDateString()} ➡ ${new Date(item.endDate).toLocaleDateString()}</td>
+                <td>${item.visitPurpose || '-'}</td>
+                <td>${item.modeOfPayment || '-'}</td>
                 <td>₹${item.price || 0}</td>
               </tr>
             `).join('')}
@@ -177,42 +177,42 @@ const generatePDF = async () => {
     </html>
   `;
 
-  try {
-    const { uri } = await Print.printToFileAsync({ html: htmlContent });
-    const fileName = `Checkout_History_${Date.now()}.pdf`;
+    try {
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+      const fileName = `Checkout_History_${Date.now()}.pdf`;
 
-    if (Platform.OS === 'android') {
-      // Save to Downloads using SAF
-      const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-      if (!permissions.granted) {
-        alert('❌ Permission not granted to access storage');
-        return;
+      if (Platform.OS === 'android') {
+        // Save to Downloads using SAF
+        const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+        if (!permissions.granted) {
+          alert('❌ Permission not granted to access storage');
+          return;
+        }
+
+        const base64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
+          permissions.directoryUri,
+          fileName,
+          'application/pdf'
+        );
+
+        await FileSystem.writeAsStringAsync(fileUri, base64, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        alert(' PDF successfully saved to Downloads');
+      } else {
+        // For iOS only: share the file
+        await Sharing.shareAsync(uri);
       }
-
-      const base64 = await FileSystem.readAsStringAsync(uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-
-      const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
-        permissions.directoryUri,
-        fileName,
-        'application/pdf'
-      );
-
-      await FileSystem.writeAsStringAsync(fileUri, base64, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-
-      alert(' PDF successfully saved to Downloads');
-    } else {
-      // For iOS only: share the file
-      await Sharing.shareAsync(uri);
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      alert(' Failed to generate or save PDF');
     }
-  } catch (error) {
-    console.error('Error exporting PDF:', error);
-    alert(' Failed to generate or save PDF');
-  }
-};
+  };
 
 
   return (

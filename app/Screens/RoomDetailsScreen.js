@@ -79,63 +79,38 @@ const RoomDetailsScreen = ({ route }) => {
   const [isCameraVisible, setCameraVisible] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [base64Image, setBase64Image] = useState("");
-  // const [flash, setFlash] = useState(Camera.Constants.FlashMode.off);
-
-
-
-  const takePhotos = async () => {
-    if (cameraRef.current) {
-      try {
-        const photo = await cameraRef.current.takePictureAsync({
-          base64: true,
-          quality: 0.3,
-        });
-
-        const base64 = `data:image/jpg;base64,${photo.base64}`;
-        setCapturedPhoto(photo.uri);
-        setShowCamera(false);
-        setCameraVisible(false);
-        setBase64Image(base64);
-
-        const customFileName = `${hotelName}_${tenantName}.jpg`;
-        const newPath = FileSystem.documentDirectory + customFileName;
-        await FileSystem.copyAsync({ from: photo.uri, to: newPath });
-        setImageFileName(customFileName);
-
-        await saveImageToGallery(newPath);
-      } catch (error) {
-        console.error('Error taking picture:', error);
-      }
-    }
-  };
+  const [frontImageFileName, setFrontImageFileName] = useState(null);
+  const [backImageFileName, setBackImageFileName] = useState(null);
 
   const takePhoto = async () => {
     if (cameraRef.current) {
       try {
+        // setLoading(true);
         const photo = await cameraRef.current.takePictureAsync({
-          base64: true,
           quality: 0.3,
         });
 
-        const base64 = `data:image/jpg;base64,${photo.base64}`;
         const customFileName = `${hotelName}_${tenantName}_${captureSide}.jpg`;
         const newPath = FileSystem.documentDirectory + customFileName;
+        const driveUrl = await dbService.uploadImageToDrive(photo.uri, customFileName, hotelName, captureSide, tenantName);
 
         await FileSystem.copyAsync({ from: photo.uri, to: newPath });
         await saveImageToGallery(newPath);
 
         if (captureSide === "front") {
           setCapturedPhoto(photo.uri);
+          setFrontImageFileName(driveUrl);
         } else if (captureSide === "back") {
-          setCapturedPhoto1(photo.uri); // Make sure this is declared with useState
+          setCapturedPhoto1(photo.uri);
+          setBackImageFileName(driveUrl);
         }
-
-        setBase64Image(base64); // optional: can be separate for front/back if needed
         setImageFileName(customFileName);
         setShowCamera(false);
         setCameraVisible(false);
       } catch (error) {
         console.error("Error taking picture:", error);
+      } finally {
+        // setLoading(false);
       }
     }
   };
@@ -196,6 +171,8 @@ const RoomDetailsScreen = ({ route }) => {
       }
       const latestRoom = result[0];
       setImageFileName(latestRoom.image || '');
+      setFrontImageFileName(latestRoom.imageFront || '');
+      setBackImageFileName(latestRoom.imageBack || '');
       setRoomStatus(latestRoom.status || '');
       setRoomNumber(latestRoom.number || '');
       setRoomType(latestRoom.type || '');
@@ -217,7 +194,7 @@ const RoomDetailsScreen = ({ route }) => {
       console.error('Failed to load room:', error);
       Alert.alert('Error', 'An error occurred while loading room details.');
     } finally {
-      setLoading(false); // Set loading to false once data is loaded
+      setLoading(false);
     }
 
   };
@@ -229,12 +206,12 @@ const RoomDetailsScreen = ({ route }) => {
       Alert.alert('Please fill in all fields');
       return;
     }
-    if (!base64Image) {
-      setLoading(false);
-      Alert.alert('No image captured', 'Please take a photo before booking.');
-      return;
-    }
-    await dbService.addMemberToRoom(hotelName, room.id, roomNumber, roomType, 'Booking', tenantName, tenantPhone, tenantAddress, tenantAdults, tenantKids, tenantPurpose, startDate, endDate, price, modeOfPayment, imageFileName);
+    // if (!photo.uri) {
+    //   setLoading(false);
+    //   Alert.alert('No image captured', 'Please take a photo before booking.');
+    //   return;
+    // }
+    await dbService.addMemberToRoom(hotelName, room.id, roomNumber, roomType, 'Booking', tenantName, tenantPhone, tenantAddress, tenantAdults, tenantKids, tenantPurpose, startDate, endDate, price, modeOfPayment, frontImageFileName, backImageFileName);
     setLoading(false);
     showAlertWithNavigationReset(
       navigation,
@@ -311,6 +288,15 @@ const RoomDetailsScreen = ({ route }) => {
     }
   }
 
+  const ImagePreview = ({ uri }) => (
+    <View style={styles.imageColumn}>
+      <TouchableOpacity onPress={() => setPreviewImageUri(uri)}>
+        <Image source={{ uri }} style={styles.image} />
+      </TouchableOpacity>
+    </View>
+  );
+
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -318,16 +304,20 @@ const RoomDetailsScreen = ({ route }) => {
       keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0} // Optional tuning
     >
       {!permission || !permission.granted ? (
-        <View style={styles.container}>
-          <Text style={styles.message}>
-            {!permission
-              ? 'Checking camera permissions...'
-              : 'We need your permission to show the camera'}
-          </Text>
-          {!permission?.granted && (
-            <Button onPress={requestPermission} title="Grant Permission" />
-          )}
-        </View>
+        <Modal visible transparent animationType="slide">
+          <View style={styles.modalBackground}>
+            <View style={styles.modalContainer}>
+              <Text style={styles.message}>
+                {!permission
+                  ? 'Checking camera permissions...'
+                  : 'We need your permission to show the camera'}
+              </Text>
+              {!permission?.granted && (
+                <Button onPress={requestPermission} title="Grant Permission" />
+              )}
+            </View>
+          </View>
+        </Modal>
       ) : (
         <ScrollView
           contentContainerStyle={{ flexGrow: 1, padding: 20 }}
@@ -480,21 +470,21 @@ const RoomDetailsScreen = ({ route }) => {
                 <Text style={{ fontWeight: 'bold' }}>Mode of Payment: </Text>
                 {room.modeOfPayment}
               </Text>
-              {imageFileName ? (
-                <Image
-                  source={{ uri: FileSystem.documentDirectory + imageFileName }}
-                  style={styles.image}
-                />
-              ) : (
+
+              {!frontImageFileName && !backImageFileName ? (
                 <Text>No image available</Text>
+              ) : (
+                <View style={styles.imageRowContainer}>
+                  {frontImageFileName && <ImagePreview uri={frontImageFileName} />}
+                  {backImageFileName && <ImagePreview uri={backImageFileName} />}
+                </View>
               )}
+
               <View style={{ marginTop: 40, alignItems: 'center' }}>
                 <Button title="Check Out" onPress={checkOut} />
               </View>
             </View>
           )}
-
-
           {roomStatus === 'Available' && (
             <View style={styles.formContainer}>
               <Text style={styles.subHeader}>Enter Customer Details</Text>
@@ -573,7 +563,6 @@ const RoomDetailsScreen = ({ route }) => {
 
 
               <View>
-                {/* Start Date Field */}
                 <TouchableOpacity style={styles.input} onPress={() => setShowStartPicker(true)}>
                   <Text style={{ color: startDate ? "black" : "#aaa" }}>
                     {startDate ? formatDate(startDate) : "Select Start Date"}
@@ -581,7 +570,7 @@ const RoomDetailsScreen = ({ route }) => {
                 </TouchableOpacity>
                 {showStartPicker && (
                   <DateTimePicker
-                    value={startDate || new Date()} // fallback if null
+                    value={startDate || new Date()}
                     mode="date"
                     display="default"
                     minimumDate={new Date()}
@@ -589,7 +578,6 @@ const RoomDetailsScreen = ({ route }) => {
                   />
                 )}
 
-                {/* End Date Field */}
                 <TouchableOpacity style={styles.input} onPress={() => setShowEndPicker(true)}>
                   <Text style={{ color: endDate ? "black" : "#aaa" }}>
                     {endDate ? formatDate(endDate) : "Select End Date"}
@@ -605,39 +593,7 @@ const RoomDetailsScreen = ({ route }) => {
                   />
                 )}
               </View>
-              {/* Camera start  */}
-              {previewImageUri && (
-                <Modal
-                  isVisible={!!previewImageUri}
-                  onBackdropPress={() => setPreviewImageUri(null)}
-                  onBackButtonPress={() => setPreviewImageUri(null)}
-                  style={{ margin: 0 }}
-                >
-                  <ImageViewer
-                    imageUrls={[{ url: previewImageUri }]}
-                    enableSwipeDown={true}
-                    onSwipeDown={() => setPreviewImageUri(null)}
-                    onCancel={() => setPreviewImageUri(null)}
-                    renderIndicator={() => null}
-                    renderHeader={() => (
-                      <TouchableOpacity
-                        onPress={() => setPreviewImageUri(null)}
-                        style={{
-                          position: 'absolute',
-                          top: 40,
-                          right: 20,
-                          zIndex: 1,
-                          padding: 10,
-                          backgroundColor: 'rgba(0,0,0,0.6)',
-                          borderRadius: 20,
-                        }}
-                      >
-                        <Text style={{ color: 'white', fontSize: 18 }}>✕</Text>
-                      </TouchableOpacity>
-                    )}
-                  />
-                </Modal>
-              )}
+
 
               <Modal
                 visible={isCameraVisible}
@@ -663,50 +619,53 @@ const RoomDetailsScreen = ({ route }) => {
               </Modal>
 
               <View style={styles.imageRowContainer}>
-                {/* Front Side */}
                 <View style={styles.imageColumn}>
                   <Button
                     title="Front"
                     onPress={() => {
-                      setCaptureSide("front");
-                      setCameraVisible(true);
-                      setShowCamera(true);
+                      if (tenantName?.trim()) {
+                        setCaptureSide("front");
+                        setCameraVisible(true);
+                        setShowCamera(true);
+                      } else {
+                        Alert.alert("Missing Information", "Please enter tenant name before proceeding.");
+                      }
+
                     }}
                   />
                   {capturedPhoto && (
-                    // <Image source={{ uri: capturedPhoto }} style={styles.previewImage} />
                     <TouchableOpacity onPress={() => setPreviewImageUri(capturedPhoto)}>
                       <Image source={{ uri: capturedPhoto }} style={styles.previewImage} />
                     </TouchableOpacity>
                   )}
                 </View>
 
-                {/* Back Side */}
                 <View style={styles.imageColumn}>
                   <Button
                     title="Back"
                     onPress={() => {
-                      setCaptureSide("back");
-                      setCameraVisible(true);
-                      setShowCamera(true);
+                      if (tenantName?.trim()) {
+                        setCaptureSide("back");
+                        setCameraVisible(true);
+                        setShowCamera(true);
+                      } else {
+                        Alert.alert("Missing Information", "Please enter tenant name before proceeding.");
+                      }
                     }}
                   />
                   {capturedPhoto1 && (
-                    // <Image source={{ uri: capturedPhoto1 }} style={styles.previewImage} />
                     <TouchableOpacity onPress={() => setPreviewImageUri(capturedPhoto1)}>
                       <Image source={{ uri: capturedPhoto1 }} style={styles.previewImage} />
                     </TouchableOpacity>
                   )}
                 </View>
               </View>
-              {/* Camera End */}
 
               <View style={{ marginTop: 20, alignItems: 'center' }}>
                 <Button title="Book Room" onPress={handleBooking} />
               </View>
             </View>
           )}
-
           {roomStatus === 'Cleaning' && (
             <View style={styles.formContainer}>
               <View style={{ marginTop: 20, alignItems: 'center' }}>
@@ -714,7 +673,38 @@ const RoomDetailsScreen = ({ route }) => {
               </View>
             </View>
           )}
-
+          {previewImageUri && (
+            <Modal
+              isVisible={!!previewImageUri}
+              onBackdropPress={() => setPreviewImageUri(null)}
+              onBackButtonPress={() => setPreviewImageUri(null)}
+              style={{ margin: 0 }}
+            >
+              <ImageViewer
+                imageUrls={[{ url: previewImageUri }]}
+                enableSwipeDown={true}
+                onSwipeDown={() => setPreviewImageUri(null)}
+                onCancel={() => setPreviewImageUri(null)}
+                renderIndicator={() => null}
+                renderHeader={() => (
+                  <TouchableOpacity
+                    onPress={() => setPreviewImageUri(null)}
+                    style={{
+                      position: 'absolute',
+                      top: 40,
+                      right: 20,
+                      zIndex: 1,
+                      padding: 10,
+                      backgroundColor: 'rgba(0,0,0,0.6)',
+                      borderRadius: 20,
+                    }}
+                  >
+                    <Text style={{ color: 'white', fontSize: 18 }}>✕</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </Modal>
+          )}
         </ScrollView>
       )}
     </KeyboardAvoidingView>
@@ -953,6 +943,23 @@ const styles = StyleSheet.create({
     height: 300,
     resizeMode: 'contain',
   },
-
+  modalBackground: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContainer: {
+    width: '80%',
+    padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  message: {
+    marginBottom: 20,
+    textAlign: 'center',
+    fontSize: 16,
+  },
 
 });

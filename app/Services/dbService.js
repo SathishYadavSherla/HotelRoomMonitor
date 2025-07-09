@@ -3,7 +3,8 @@
 import * as SQLite from 'expo-sqlite';
 import { ROOMS } from '../../constants/mockdata';
 import { View, Text, TextInput, Button, Image, Alert, StyleSheet, TouchableOpacity } from 'react-native';
-const SHEET_API = 'https://script.google.com/macros/s/AKfycbykrftbQK30K3pozF2ehB2V2k_PBOw0QILxb1GaNH8eF5ERjXkGYEErJ01qXrriN1yv0Q/exec';
+import * as FileSystem from 'expo-file-system';
+const SHEET_API = 'https://script.google.com/macros/s/AKfycbydlgnou4zMrO_EYAs2f9aY8gn1iRMQ_CbERHogdSry5RWlZtIKgFLy_bXwRr5lqhYV0w/exec';
 
 const dbService = {
 
@@ -25,12 +26,10 @@ const dbService = {
 
       return await response.json();
     } catch (error) {
-      console.error('Error calling SHEET_API:', error);
+      console.error('Error c alling SHEET_API:', error);
       throw error;
     }
   },
-
-
   createSheetsAndSaveCredentials: async (hotelName, username, password) => {
     try {
       const response = await fetch(SHEET_API, {
@@ -69,8 +68,6 @@ const dbService = {
       return { success: false, message: 'Server error' };
     }
   },
-
-
   getRooms: async (hotelName) => {
     try {
       const url = `${SHEET_API}?hotelName=${encodeURIComponent(hotelName)}`;
@@ -89,9 +86,6 @@ const dbService = {
       return [];
     }
   },
-
-
-
   getRoomsByType: async (hotelName, type) => {
     try {
       const url = `${SHEET_API}?hotelName=${encodeURIComponent(hotelName)}&type=${encodeURIComponent(type)}`;
@@ -101,8 +95,6 @@ const dbService = {
       console.error('Error fetching room by type:', error);
     }
   },
-
-
   getRoomsByID: async (hotelName, roomId) => {
     try {
       const url = `${SHEET_API}?hotelName=${encodeURIComponent(hotelName)}&id=${encodeURIComponent(roomId)}`;
@@ -111,12 +103,11 @@ const dbService = {
     } catch (error) {
       console.error('Error fetching ro om by ID:', error);
     }
-  }
-  ,
-
+  },
   getHistoryRooms: async (hotelName) => {
     try {
       const url = `${SHEET_API}?hotelName=${encodeURIComponent(hotelName)}&history=true`;
+      console.log(url);
       const response = await fetch(url);
       return await response.json();
     } catch (error) {
@@ -124,8 +115,6 @@ const dbService = {
       return [];
     }
   },
-
-
   registerHotel: async (hotelName, place, mobile, email, owner) => {
     const payload = {
       action: 'RegisterHotel',
@@ -145,8 +134,35 @@ const dbService = {
 
     return await response.json();
   },
+  uploadImageToDrive: async (uri, fileName, hotelName, captureSide, tenantName) => {
+    try {
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
 
+      const response = await fetch(SHEET_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileName,
+          hotelName,
+          tenantName,
+          captureSide,
+          imageData: base64,
+          mimeType: 'image/jpeg',
+          action: 'UploadBase64Image',
+        }),
+      });
 
+      const result = await response.json();
+      return result.success ? result.url : null;
+    } catch (err) {
+      console.error('Upload error:', err);
+      return null;
+    }
+  },
   addMemberToRoom: async (
     hotelName,
     roomId,
@@ -163,7 +179,8 @@ const dbService = {
     endDate,
     price,
     modeOfPayment,
-    base64Image
+    frontImageFileName,
+    backImageFileName
   ) => {
     try {
       const body = {
@@ -182,9 +199,10 @@ const dbService = {
         endDate,
         price,
         modeOfPayment,
-        base64Image
+        frontImageFileName,
+        backImageFileName
       };
-      console.log(body);
+      console.log("Body", body);
       const response = await fetch(SHEET_API, {
         method: 'POST',
         body: JSON.stringify(body),
@@ -199,7 +217,6 @@ const dbService = {
       console.error('Error posting data::', error);
     }
   },
-
   updateMemberDetailsOnly: async (
     roomId,
     number, type, status,
@@ -240,8 +257,24 @@ const dbService = {
     } catch (error) {
       console.error('Error updating memb r details:', error);
     }
+  },
+  moveRoomBooking: async (hotelName, fromRoom, toRoom) => {
+    try {
+      const body = {
+        action: 'MoveBooking',
+        hotelName, fromRoom, toRoom
+      };
+      const response = await fetch(SHEET_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Move Failed', error);
+    }
   }
-
 
 };
 

@@ -84,7 +84,7 @@ const HomeScreen = ({ route, navigation }) => {
   const loadHistory = async () => {
     try {
       setLoading(true);
-      const data = await dbService.getHistoryRooms();
+      const data = await dbService.getHistoryRooms(hotelName);
       navigation.navigate('CheckoutHistory', { historyData: data });
     } catch (error) {
       console.error('Failed to fetch booked rooms:', error);
@@ -93,17 +93,13 @@ const HomeScreen = ({ route, navigation }) => {
     }
   };
 
-  const GotoLoginPage = async () => {
-    navigation.navigate('LogIn', { hotelName });
-  }
-
   const fetchBookedRooms = async () => {
     try {
       setLoading(true);
-
       const bookedRooms = rooms
         .filter(room => room.status === 'Booked')
         .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+      console.log(bookedRooms);
 
       navigation.navigate('BookedRooms', {
         rooms: bookedRooms,
@@ -121,8 +117,6 @@ const HomeScreen = ({ route, navigation }) => {
     try {
       setLoading(true);
       const bookedRooms = rooms.filter(room => room.status === 'Cleaning');
-      console.log("Rooms", bookedRooms);
-
       navigation.navigate('BookedRooms', {
         rooms: bookedRooms,
         title: 'Rooms Under Cleaning',

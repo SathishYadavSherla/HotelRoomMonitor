@@ -8,6 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   Modal,
+  Alert
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import dbService from '../Services/dbService';
@@ -26,6 +27,9 @@ const RoomTypeScreen = ({ route, navigation }) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [loading, setLoading] = useState(true);
+  const [moveModalVisible, setMoveModalVisible] = useState(false);
+  const [bookedRoomToMove, setBookedRoomToMove] = useState(null);
+
   useEffect(() => {
     const loadRooms = async () => {
       try {
@@ -58,18 +62,9 @@ const RoomTypeScreen = ({ route, navigation }) => {
     return acc;
   }, {});
 
-  const shouldShowCheckoutIcon = (room) => {
-    if (room.status !== 'Booked' || !room.enddate) return false;
-
-    const endDate = new Date(room.enddate);
-    if (isNaN(endDate.getTime())) {
-      console.warn('Invalid endDate format:', room.enddate);
-      return false;
-    }
-    const now = new Date();
-    const timeDiffMs = endDate - now;
-    const timeDiffHours = timeDiffMs / (1000 * 60 * 60);
-    return timeDiffHours <= 3 && timeDiffHours > 0;
+  const shouldShowMoveIcon = (room) => {
+    if (room.status === 'Booked')
+      return true;
   };
 
 
@@ -118,26 +113,34 @@ const RoomTypeScreen = ({ route, navigation }) => {
             <Text style={styles.floorTitle}>{floor}</Text>
             {groupedByFloor[floor].map((room) => {
 
-              const showCheckoutWarning = shouldShowCheckoutIcon(room);
+              const showMoveIcon = shouldShowMoveIcon(room);
 
               return (
                 <TouchableOpacity
                   key={room.id}
                   style={[styles.item, getStatusStyle(room.status)]}
-                  onPress={() => navigation.navigate('RoomDetails', { room, hotelName })}
+                // onPress={() => navigation.navigate('RoomDetails', { room, hotelName })}
                 >
                   <View style={styles.roomRow}>
                     <Text style={styles.text}>
                       Room {room.number} - {room.status}
                     </Text>
-                    {showCheckoutWarning &&
+                    {showMoveIcon &&
                       (
-                        <Icon
-                          name="clock-alert"
-                          size={20}
-                          color="#e67e22"
-                          style={styles.warningIcon}
-                        />
+                        <TouchableOpacity
+                          onPress={() => {
+                            setBookedRoomToMove(room);
+                            setMoveModalVisible(true);
+                          }}
+                        >
+                          <Icon
+                            name="clock-alert"
+                            size={20}
+                            color="#e67e22"
+                            style={styles.warningIcon}
+                          />
+                        </TouchableOpacity>
+
                       )}
                   </View>
                 </TouchableOpacity>
@@ -146,8 +149,91 @@ const RoomTypeScreen = ({ route, navigation }) => {
           </View>
         )}
       />
+      <Modal
+        visible={moveModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setMoveModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.item, { backgroundColor: '#fff', width: '80%' }]}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
+              Move booking from Room {bookedRoomToMove?.number}
+            </Text>
+
+            {rooms
+              .filter(
+                (r) => r.status === 'Available' && r.type === bookedRoomToMove?.type
+              )
+              .map((targetRoom) => (
+                <TouchableOpacity
+                  key={targetRoom.id}
+                  style={{
+                    paddingVertical: 10,
+                    borderBottomWidth: 1,
+                    borderColor: '#ddd',
+                  }}
+                  onPress={() => {
+                    // Show confirmation alert
+                    const fromRoom = bookedRoomToMove.number;
+                    const toRoom = targetRoom.number;
+
+                    setMoveModalVisible(false);
+
+                    setTimeout(() => {
+                      // Alert after modal closes for better UX
+                      Alert.alert(
+                        'Confirm Move',
+                        `Move booking from Room ${fromRoom} to Room ${toRoom}?`,
+                        [
+                          {
+                            text: 'Cancel',
+                            style: 'cancel',
+                          },
+                          {
+                            text: 'OK',
+                            onPress: async () => {
+                              setLoading(true);
+                              try {
+                                const result = await dbService.moveRoomBooking(hotelName, fromRoom, toRoom);
+                                if (result?.success) {
+                                  Alert.alert("Success", result.message);
+                                  const updatedRooms = await dbService.getRoomsByType(hotelName, type);
+                                  setRooms(updatedRooms);
+                                } else {
+                                  Alert.alert("Error", result?.message || "Move failed");
+                                }
+                              } catch (error) {
+                                console.error('Error moving booking:', error);
+                                Alert.alert('Error', 'Failed to move booking.');
+                              } finally {
+                                setLoading(false);
+                              }
+                            },
+                          },
+                        ]
+                      );
+                    }, 300);
+                  }}
+                >
+                  <Text style={{ fontSize: 16 }}>Room {targetRoom.number}</Text>
+                </TouchableOpacity>
+              ))}
+
+            <TouchableOpacity
+              onPress={() => setMoveModalVisible(false)}
+              style={{ marginTop: 15, alignSelf: 'flex-end' }}
+            >
+              <Text style={{ color: 'red' }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </View>
+
   );
+
 };
 
 const getStatusStyle = (status) => {
