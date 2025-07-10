@@ -106,7 +106,11 @@ const RoomTypeScreen = ({ route, navigation }) => {
       </View>
 
       <FlatList
-        data={Object.keys(groupedByFloor)}
+        data={Object.keys(groupedByFloor).sort((a, b) => {
+          const numA = parseInt(a);
+          const numB = parseInt(b);
+          return numA - numB;
+        })}
         keyExtractor={(item) => item}
         renderItem={({ item: floor }) => (
           <View style={styles.floorGroup}>
@@ -119,31 +123,48 @@ const RoomTypeScreen = ({ route, navigation }) => {
                 <TouchableOpacity
                   key={room.id}
                   style={[styles.item, getStatusStyle(room.status)]}
-                // onPress={() => navigation.navigate('RoomDetails', { room, hotelName })}
+                  onPress={() => navigation.navigate('RoomDetails', { room, hotelName })}
                 >
                   <View style={styles.roomRow}>
                     <Text style={styles.text}>
                       Room {room.number} - {room.status}
                     </Text>
-                    {showMoveIcon &&
-                      (
-                        <TouchableOpacity
-                          onPress={() => {
+
+                    {showMoveIcon && (
+                      <TouchableOpacity
+                        onPress={(e) => {
+                          e.stopPropagation?.();
+                          const availableRoomsOfSameType = rooms.filter(
+                            (r) => r.status === 'Available' && r.type === room.type
+                          );
+
+                          if (availableRoomsOfSameType.length > 0) {
                             setBookedRoomToMove(room);
                             setMoveModalVisible(true);
-                          }}
-                        >
-                          <Icon
-                            name="clock-alert"
-                            size={20}
-                            color="#e67e22"
-                            style={styles.warningIcon}
-                          />
-                        </TouchableOpacity>
-
-                      )}
+                          } else {
+                            Alert.alert('No Available Rooms', `No available "${room.type}" rooms found to move the booking.`);
+                          }
+                        }}
+                        style={{
+                          width: 40,
+                          height: 36,
+                          borderRadius: 18,
+                          backgroundColor: 'white', // light orange background
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          marginRight: 20,
+                        }}
+                      >
+                        <Icon
+                          name="swap-vertical"
+                          size={25}
+                          color="#e67e22"
+                        />
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </TouchableOpacity>
+
               );
             })}
           </View>
@@ -156,15 +177,16 @@ const RoomTypeScreen = ({ route, navigation }) => {
         onRequestClose={() => setMoveModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.item, { backgroundColor: '#fff', width: '80%' }]}>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
-              Move booking from Room {bookedRoomToMove?.number}
+          <View style={[styles.item, { backgroundColor: '#fff', width: '80%', height: '80%' }]}>
+            <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 30, marginTop: 10 }}>
+              Move booking from Room {bookedRoomToMove?.number}  ➡
             </Text>
 
             {rooms
               .filter(
                 (r) => r.status === 'Available' && r.type === bookedRoomToMove?.type
               )
+              .sort((a, b) => parseInt(a.number) - parseInt(b.number))
               .map((targetRoom) => (
                 <TouchableOpacity
                   key={targetRoom.id}
@@ -172,16 +194,13 @@ const RoomTypeScreen = ({ route, navigation }) => {
                     paddingVertical: 10,
                     borderBottomWidth: 1,
                     borderColor: '#ddd',
+                    marginBottom: 10,
                   }}
                   onPress={() => {
-                    // Show confirmation alert
                     const fromRoom = bookedRoomToMove.number;
                     const toRoom = targetRoom.number;
-
-                    setMoveModalVisible(false);
-
+                    if (!toRoom) return;
                     setTimeout(() => {
-                      // Alert after modal closes for better UX
                       Alert.alert(
                         'Confirm Move',
                         `Move booking from Room ${fromRoom} to Room ${toRoom}?`,
@@ -197,6 +216,8 @@ const RoomTypeScreen = ({ route, navigation }) => {
                               try {
                                 const result = await dbService.moveRoomBooking(hotelName, fromRoom, toRoom);
                                 if (result?.success) {
+                                  setBookedRoomToMove(null);
+                                  setMoveModalVisible(false);
                                   Alert.alert("Success", result.message);
                                   const updatedRooms = await dbService.getRoomsByType(hotelName, type);
                                   setRooms(updatedRooms);
@@ -204,7 +225,6 @@ const RoomTypeScreen = ({ route, navigation }) => {
                                   Alert.alert("Error", result?.message || "Move failed");
                                 }
                               } catch (error) {
-                                console.error('Error moving booking:', error);
                                 Alert.alert('Error', 'Failed to move booking.');
                               } finally {
                                 setLoading(false);
@@ -222,9 +242,21 @@ const RoomTypeScreen = ({ route, navigation }) => {
 
             <TouchableOpacity
               onPress={() => setMoveModalVisible(false)}
-              style={{ marginTop: 15, alignSelf: 'flex-end' }}
+              style={{
+                marginTop: 300,
+                alignSelf: 'center',
+                backgroundColor: 'red',
+                paddingVertical: 10,
+                paddingHorizontal: 20,
+                borderRadius: 10,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 3, // Android shadow
+              }}
             >
-              <Text style={{ color: 'red' }}>Cancel</Text>
+              <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -293,9 +325,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  warningIcon: {
-    marginLeft: 10,
-  },
+
 });
 
 export default RoomTypeScreen;
