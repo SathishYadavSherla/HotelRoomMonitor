@@ -4,7 +4,6 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { getFocusedRouteNameFromRoute, RouteProp, ParamListBase } from '@react-navigation/native';
 import { TouchableOpacity, Text } from 'react-native';
 
-
 import HomeScreen from '../Screens/HomeScreen';
 import RoomTypeScreen from '../Screens/RoomTypeScreen';
 import RoomDetailsScreen from '../Screens/RoomDetailsScreen';
@@ -15,9 +14,12 @@ import CheckoutHistoryScreen from '../Screens/CheckoutHistoryScreen';
 import LoginScreen from '../Screens/LoginScreen';
 import CustomDrawerContent from '../Screens/CustomDrawerContent';
 import Camera from '../Screens/Camera';
+import { useHotel } from '../Screens/HotelContext';
+
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
+
 
 // Home stack with nested screens
 const HomeStack = () => (
@@ -32,24 +34,28 @@ const HomeStack = () => (
   </Stack.Navigator>
 );
 
-// Function to control header visibility
-const getDrawerOptions = (route: RouteProp<ParamListBase, string>): DrawerNavigationOptions => {
-  const routeName = getFocusedRouteNameFromRoute(route) ?? 'LogIn';
 
-  const showHeader = routeName === 'Home';
-
-  return {
-    headerShown: showHeader,
-    headerTitle: 'Hotel Information',
-    headerTitleAlign: 'center',
-    headerStyle: { backgroundColor: '#90746e' },
-    headerTintColor: '#fff',
-    headerTitleStyle: { fontWeight: 'bold' },
-  };
-};
 
 // Main drawer navigation
 const AppNavigator = () => {
+
+  const { hotelFullName } = useHotel();
+  // Function to control header visibility
+  const getDrawerOptions = (route: RouteProp<ParamListBase, string>): DrawerNavigationOptions => {
+    const routeName = getFocusedRouteNameFromRoute(route) ?? 'LogIn';
+
+    const showHeader = routeName === 'Home';
+
+    return {
+      headerShown: showHeader,
+      headerTitle: hotelFullName ? `${hotelFullName} - Hotel Information` : 'Hotel Information',
+      headerTitleAlign: 'center',
+      headerStyle: { backgroundColor: '#90746e' },
+      headerTintColor: '#fff',
+      headerTitleStyle: { fontWeight: 'bold' },
+    };
+  };
+
   return (
     <Drawer.Navigator initialRouteName="Hotel Information"
       drawerContent={(props) => <CustomDrawerContent {...props} />}>

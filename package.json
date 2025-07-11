@@ -57,6 +57,7 @@
     "react-native-image-pan-zoom": "^2.1.12",
     "react-native-image-picker": "^8.2.1",
     "react-native-image-zoom-viewer": "^3.0.1",
+    "react-native-linear-gradient": "^2.8.3",
     "react-native-logs": "^5.3.0",
     "react-native-modal": "^14.0.0-rc.1",
     "react-native-reanimated": "~3.16.1",

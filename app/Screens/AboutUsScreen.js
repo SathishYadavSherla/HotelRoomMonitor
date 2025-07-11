@@ -1,10 +1,13 @@
 import React from 'react';
 import { View, Text, Image, ScrollView, StyleSheet, Dimensions } from 'react-native';
-
+import { useHotel } from '../Screens/HotelContext';
 const AboutUsScreen = () => {
+  const { hotelFullName, hotelName } = useHotel();
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>{hotelFullName} - {hotelName}</Text>
+      </View>
     </ScrollView>
   );
 };

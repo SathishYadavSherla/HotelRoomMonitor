@@ -66,7 +66,6 @@ const AddRoomModal = ({ addRoomVisible, setaddRoomVisible, hotelName, refreshRoo
       const hasError = newErrors.some(err => err.roomNumber || err.roomType);
       if (!hasError) {
         const result = await dbService.insertNewRoom(hotelName, roomData, 'Available');
-
         if (result.success) {
           const resetAndClose = () => {
             setRoomData([{ roomNumber: '', roomType: '' }]);

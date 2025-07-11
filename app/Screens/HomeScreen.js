@@ -7,22 +7,26 @@ import { useFocusEffect } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import AddRoomModal from './AddRoomModal'; // adjust the path if needed
 import { useHotel } from './HotelContext';
-
-
+import ScreenWrapper from './ScreenWrapper';
 
 const HomeScreen = ({ route, navigation }) => {
-
   const { hotelName } = route.params ?? {};
-
   const [roomTypes, setRoomTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [rooms, setRooms] = useState([]);
   const [addRoomVisible, setaddRoomVisible] = useState(false);
   const { setHotelName } = useHotel();
+  const { setHotelFullName } = useHotel();
 
   useEffect(() => {
     setHotelName(hotelName);
   }, []);
+  useEffect(() => {
+    const fullName = route.params?.hotelFullName;
+    if (fullName) {
+      setHotelFullName(fullName);
+    }
+  }, [route.params]);
   useFocusEffect(
     useCallback(() => {
       initializeAndFetch();
