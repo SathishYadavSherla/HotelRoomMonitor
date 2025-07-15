@@ -272,7 +272,7 @@ const dbService = {
       const result = await response.json();
       return result;
     } catch (error) {
-      console.error('Move Failed', error);
+      console.error('Move  Failed', error);
     }
   }
 

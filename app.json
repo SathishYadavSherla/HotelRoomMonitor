@@ -5,7 +5,7 @@
     "slug": "HotelRoomMonitor",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "../assets/images/HRM.png",
+    "icon": "../../app/Images/HRM.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -39,7 +39,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "../../app/Images/login_bg.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"

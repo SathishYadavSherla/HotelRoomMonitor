@@ -9,6 +9,7 @@ import AddRoomModal from './AddRoomModal'; // adjust the path if needed
 import { useHotel } from './HotelContext';
 import ScreenWrapper from './ScreenWrapper';
 
+
 const HomeScreen = ({ route, navigation }) => {
   const { hotelName } = route.params ?? {};
   const [roomTypes, setRoomTypes] = useState([]);
@@ -145,9 +146,13 @@ const HomeScreen = ({ route, navigation }) => {
           <ActivityIndicator size="large" color="#0000ff" />
         </View>
       </Modal>
-      <Text style={styles.header}>Rooms Available</Text>
+      {roomTypes.length > 0 && (
+        <Text style={styles.header}>Rooms Available</Text>
+      )}
       {roomTypes.length === 0 ? (
-        <Text>No data found</Text>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No data found</Text>
+        </View>
       ) : (
         <FlatList
           data={roomTypes}
@@ -164,8 +169,7 @@ const HomeScreen = ({ route, navigation }) => {
       )}
 
       <View style={styles.bottomButtons}>
-        <TouchableOpacity style={styles.bookedButton} onPress={fetchBookedRooms}//onPress={() => navigation.navigate('Camera')}//
-        >
+        <TouchableOpacity style={styles.bookedButton} onPress={fetchBookedRooms}>
           <Text style={styles.bookedButtonText}>Booked Rooms</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.bookedButton} onPress={fetchCleaningRooms}>
@@ -174,29 +178,9 @@ const HomeScreen = ({ route, navigation }) => {
         <TouchableOpacity style={styles.bookedButton} onPress={loadHistory}>
           <Text style={styles.bookedButtonText}>View Checkout History</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.bookedButton, { marginLeft: 10 }]} onPress={() => setaddRoomVisible(true)}>
+        <TouchableOpacity style={[styles.bookedButton]} onPress={() => setaddRoomVisible(true)}>
           <Text style={styles.bookedButtonText}>Add Rooms</Text>
         </TouchableOpacity>
-        {/* <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.bookedButton} onPress={GotoLoginPage}>
-            <Text style={styles.bookedButtonText}>Logout</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.bookedButton, { marginLeft: 10 }]}
-            onPress={() => {
-              navigation.navigate('LogIn', {
-                fromChangePassword: true,
-                hotelCode: hotelName,
-              });
-            }}
-          >
-            <Text style={styles.bookedButtonText}>Change Password</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.bookedButton, { marginLeft: 10 }]} onPress={() => setaddRoomVisible(true)}>
-            <Text style={styles.bookedButtonText}>Add Rooms</Text>
-          </TouchableOpacity>
-        </View> */}
       </View>
       <AddRoomModal
         addRoomVisible={addRoomVisible}
@@ -230,7 +214,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
   },
-  text: { fontSize: 18 },
+  text: { fontSize: 18, color: 'black' },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
@@ -247,7 +231,7 @@ const styles = StyleSheet.create({
   },
 
   bookedButton: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#e78617d7',
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
@@ -313,7 +297,7 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#4480c0ff',
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -337,4 +321,18 @@ const styles = StyleSheet.create({
   inputGroup: {
     flex: 1,
   },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 300,
+  },
+  emptyText: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#888',
+    fontStyle: 'italic',
+  },
+
+
 });

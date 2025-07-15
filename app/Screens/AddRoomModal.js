@@ -103,18 +103,37 @@ const AddRoomModal = ({ addRoomVisible, setaddRoomVisible, hotelName, refreshRoo
 
   };
 
+  const renderScrollContent = () => (
+    <ScrollView
+      contentContainerStyle={styles.modalContainer}
+      keyboardShouldPersistTaps="handled"
+    >
+      {renderRoomInputs()}
+
+      <View style={styles.buttonRow}>
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: '#aaa', marginRight: 10 }]}
+          onPress={() => setaddRoomVisible(false)}
+        >
+          <Text style={styles.buttonText}>Cancel</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: '#007AFF' }]}
+          onPress={validateAndSave}
+        >
+          <Text style={styles.buttonText}>Add Room</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
+
+
 
   const renderRoomInputs = () => (
     <>
       <View style={styles.counterRow}>
-        <TouchableOpacity onPress={increaseRooms} style={styles.iconButton}>
-          <Text style={styles.iconText}>+</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.countText}>{roomCount}</Text>
-
-        <TouchableOpacity
-          onPress={decreaseRooms}
+        <TouchableOpacity onPress={decreaseRooms}
           style={[
             styles.iconButton,
             roomCount === 1 && { backgroundColor: '#ccc' }
@@ -123,6 +142,11 @@ const AddRoomModal = ({ addRoomVisible, setaddRoomVisible, hotelName, refreshRoo
         >
           <Text style={styles.iconText}>−</Text>
         </TouchableOpacity>
+        <Text style={styles.countText}>{roomCount}</Text>
+        <TouchableOpacity onPress={increaseRooms} style={styles.iconButton}>
+          <Text style={styles.iconText}>+</Text>
+        </TouchableOpacity>
+
       </View>
 
       <Text style={styles.sectionLabel}>Room Number and Type</Text>
@@ -191,17 +215,18 @@ const AddRoomModal = ({ addRoomVisible, setaddRoomVisible, hotelName, refreshRoo
 
                 <View style={styles.buttonRow}>
                   <TouchableOpacity
-                    style={[styles.button, { backgroundColor: '#007AFF', marginRight: 10 }]}
-                    onPress={validateAndSave}
-                  >
-                    <Text style={styles.buttonText}>Add Room</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.button, { backgroundColor: '#aaa' }]}
+                    style={[styles.button, { backgroundColor: '#aaa', marginRight: 10 }]}
                     onPress={() => setaddRoomVisible(false)}
                   >
                     <Text style={styles.buttonText}>Cancel</Text>
                   </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.button, { backgroundColor: '#007AFF' }]}
+                    onPress={validateAndSave}
+                  >
+                    <Text style={styles.buttonText}>Add Room</Text>
+                  </TouchableOpacity>
+
                 </View>
               </View>
             ) : (
@@ -213,17 +238,18 @@ const AddRoomModal = ({ addRoomVisible, setaddRoomVisible, hotelName, refreshRoo
 
                 <View style={styles.buttonRow}>
                   <TouchableOpacity
-                    style={[styles.button, { backgroundColor: '#007AFF', marginRight: 10 }]}
-                    onPress={validateAndSave}
-                  >
-                    <Text style={styles.buttonText}>Add Room</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.button, { backgroundColor: '#aaa' }]}
+                    style={[styles.button, { backgroundColor: '#aaa', marginRight: 10 }]}
                     onPress={() => setaddRoomVisible(false)}
                   >
                     <Text style={styles.buttonText}>Cancel</Text>
                   </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.button, { backgroundColor: '#007AFF' }]}
+                    onPress={validateAndSave}
+                  >
+                    <Text style={styles.buttonText}>Add Room</Text>
+                  </TouchableOpacity>
+
                 </View>
               </ScrollView>
             )}
@@ -338,7 +364,7 @@ const styles = StyleSheet.create({
   buttonRow: {
     padding: 10,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     marginTop: 20,
   },
   button: {

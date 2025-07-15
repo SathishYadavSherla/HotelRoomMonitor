@@ -13,6 +13,7 @@ import {
   Keyboard,
   ScrollView,
   Platform,
+  ImageBackground,
   KeyboardAvoidingView,
   StatusBar, Image
 } from 'react-native';
@@ -21,11 +22,13 @@ import dbService from '../Services/dbService';
 import { useRoute } from '@react-navigation/native';
 import ScreenWrapper from './ScreenWrapper';
 import { useHotel } from './HotelContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 
 const LoginScreen = ({ navigation }) => {
   const [hotelName, setHotelName] = useState('');
-  const { hotelFullName, setHotelFullName } = useHotel(); // ✅ use hotel context
+  const { hotelFullName, setHotelFullName } = useHotel();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -43,6 +46,9 @@ const LoginScreen = ({ navigation }) => {
   const [registerPlaceError, setRegisterPlaceError] = useState('');
   const [registerMobileError, setRegisterMobileError] = useState('');
   const [registerEmailIDError, setRegisterEmailIDError] = useState('');
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [loginInProgress, setLoginInProgress] = useState(false);
+
 
   const route = useRoute();
   const fromChangePassword = route.params?.fromChangePassword ?? false;
@@ -54,29 +60,70 @@ const LoginScreen = ({ navigation }) => {
     }
   }, [fromChangePassword, hotelCodeParam]);
 
+  useEffect(() => {
+    const checkUserSession = async () => {
+      if (!fromChangePassword) {
+        try {
+          setLoginInProgress(true);
+          const session = await AsyncStorage.getItem('userSession');
+          if (session) {
+            const { hotelName, username, password } = JSON.parse(session);
+            const response = await dbService.createSheetsAndSaveCredentials(hotelName, username, password);
+            if (response.success) {
+              setHotelFullName(response.hotelFullName);
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Home', params: { hotelName, hotelFullName: response.hotelFullName } }],
+              });
+            }
+          }
+        } catch (err) {
+          setLoading(false);
+          console.error('Failed to restore session', err);
+        } finally {
+          setLoginInProgress(false);
+        }
+      }
+    };
+    checkUserSession();
+  }, []);
+
   const handleLogin = async () => {
     if (!hotelName || !username || !password || (fromChangePassword && !newPassword)) {
       Alert.alert('Error', 'Please fill all fields');
       return;
     }
 
-    setLoading(true);
+    setLoginInProgress(true);
 
     try {
       if (fromChangePassword) {
         const updateResponse = await dbService.updatePassword(hotelName, username, newPassword, password);
         if (updateResponse.success) {
-          Alert.alert('Success', 'Password changed successfully');
-          const loginResponse = await dbService.createSheetsAndSaveCredentials(hotelName, username, newPassword);
-          if (loginResponse.success) {
-            navigation.navigate('Home', { hotelName });
-            setHotelName('');
-            setUsername('');
-            setPassword('');
-            setNewPassword('');
-          } else {
-            Alert.alert('Error', 'Auto-login failed');
-          }
+
+          Alert.alert('Success', 'Password changed successfully', [
+            {
+              text: 'OK',
+              onPress: async () => {
+                const loginResponse = await dbService.createSheetsAndSaveCredentials(hotelName, username, newPassword);
+                if (loginResponse.success) {
+                  await AsyncStorage.setItem('userSession', JSON.stringify({
+                    hotelName,
+                    username,
+                    password: newPassword,
+                  }));
+                  navigation.navigate('Home', { hotelName });
+                  setHotelName('');
+                  setUsername('');
+                  setPassword('');
+                  setNewPassword('');
+                } else {
+                  Alert.alert('Error', 'Auto-login failed');
+                }
+                setLoginInProgress(false);
+              }
+            }
+          ]); return; // Exit early to avoid setting false twice
         } else {
           Alert.alert('Error', updateResponse.message || 'Password update failed');
         }
@@ -84,6 +131,11 @@ const LoginScreen = ({ navigation }) => {
         const response = await dbService.createSheetsAndSaveCredentials(hotelName, username, password);
         setHotelFullName(response.hotelFullName);
         if (response.success) {
+          await AsyncStorage.setItem('userSession', JSON.stringify({
+            hotelName,
+            username,
+            password,
+          }));
           navigation.navigate('Home', { hotelName, hotelFullName: response.hotelFullName })
           setHotelName('');
           setUsername('');
@@ -96,7 +148,7 @@ const LoginScreen = ({ navigation }) => {
       console.error(error);
       Alert.alert('Error', 'Failed to contact server');
     } finally {
-      setLoading(false);
+      setLoginInProgress(false);
     }
   };
 
@@ -140,7 +192,7 @@ const LoginScreen = ({ navigation }) => {
 
     if (hasError) return;
 
-    setLoading(true);
+    setRegisterLoading(true);
     try {
       const response = await dbService.registerHotel(
         registerHotelName,
@@ -164,223 +216,262 @@ const LoginScreen = ({ navigation }) => {
     } catch (error) {
       console.error(error);
       Alert.alert('Error', 'Failed to contact server');
+      setRegisterLoading(false);
     } finally {
-      setLoading(false);
+      setRegisterLoading(false);
     }
   };
-
+  // if (loginInProgress) {
   return (
     <ScreenWrapper>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
+      ><ImageBackground
+        source={require('../../app/Images/login_bg.png')}
+        style={styles.backgroundImage}
+        resizeMode="cover"
       >
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Image source={require('../../app/Images/HRM.png')
-          } style={styles.logo} />
+          <View style={styles.overlay}>
+            <ScrollView
+              contentContainerStyle={styles.container}
+              keyboardShouldPersistTaps="handled"
+            >
+              <Image source={require('../../app/Images/HRM.png')
+              } style={styles.logo} />
 
-          <Text style={styles.title}>
-            {fromChangePassword ? 'Reset Your Password' : 'Login to Your Hotel'}
-          </Text>
+              <Text style={styles.title}>
+                {fromChangePassword ? 'Reset Your Password' : 'Login to Your Hotel'}
+              </Text>
 
-          <TextInput
-            style={[styles.input, fromChangePassword && { backgroundColor: '#eee' }]}
-            placeholder="Hotel Code"
-            value={hotelName}
-            onChangeText={setHotelName}
-            editable={!fromChangePassword}
-          />
-
-          <TextInput
-            style={styles.input}
-            placeholder="User Name"
-            value={username}
-            onChangeText={setUsername}
-          />
-
-          {fromChangePassword ? (
-            <>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={styles.passwordInput}
-                  placeholder="Old Password"
-                  value={password}
-                  secureTextEntry={secureText}
-                  onChangeText={setPassword}
-                />
-                {password.length > 0 && (
-                  <TouchableOpacity onPress={() => setSecureText(!secureText)}>
-                    <Icon
-                      name={secureText ? 'eye-off' : 'eye'}
-                      size={20}
-                      color="#666"
-                      style={styles.eyeIcon}
-                    />
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={styles.passwordInput}
-                  placeholder="New Password"
-                  value={newPassword}
-                  secureTextEntry={secureTextNew}
-                  onChangeText={setNewPassword}
-                />
-                {newPassword.length > 0 && (
-                  <TouchableOpacity onPress={() => setSecureTextNew(!secureTextNew)}>
-                    <Icon
-                      name={secureTextNew ? 'eye-off' : 'eye'}
-                      size={20}
-                      color="#666"
-                      style={styles.eyeIcon}
-                    />
-                  </TouchableOpacity>
-                )}
-              </View>
-            </>
-          ) : (
-            <View style={styles.passwordContainer}>
               <TextInput
-                style={styles.passwordInput}
-                placeholder="Password"
-                value={password}
-                secureTextEntry={secureText}
-                onChangeText={setPassword}
+                style={[styles.input, fromChangePassword && { backgroundColor: '#eee' }]}
+                placeholder="Hotel Code"
+                value={hotelName}
+                onChangeText={setHotelName}
+                editable={!fromChangePassword}
               />
-              {password.length > 0 && (
-                <TouchableOpacity onPress={() => setSecureText(!secureText)}>
-                  <Icon
-                    name={secureText ? 'eye-off' : 'eye'}
-                    size={20}
-                    color="#666"
-                    style={styles.eyeIcon}
+
+              <TextInput
+                style={styles.input}
+                placeholder="User Name"
+                value={username}
+                onChangeText={setUsername}
+              />
+
+              {fromChangePassword ? (
+                <>
+                  <View style={styles.passwordContainer}>
+                    <TextInput
+                      style={styles.passwordInput}
+                      placeholder="Old Password"
+                      value={password}
+                      secureTextEntry={secureText}
+                      onChangeText={setPassword}
+                    />
+                    {password.length > 0 && (
+                      <TouchableOpacity onPress={() => setSecureText(!secureText)}>
+                        <Icon
+                          name={secureText ? 'eye-off' : 'eye'}
+                          size={20}
+                          color="#666"
+                          style={styles.eyeIcon}
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  <View style={styles.passwordContainer}>
+                    <TextInput
+                      style={styles.passwordInput}
+                      placeholder="New Password"
+                      value={newPassword}
+                      secureTextEntry={secureTextNew}
+                      onChangeText={setNewPassword}
+                    />
+                    {newPassword.length > 0 && (
+                      <TouchableOpacity onPress={() => setSecureTextNew(!secureTextNew)}>
+                        <Icon
+                          name={secureTextNew ? 'eye-off' : 'eye'}
+                          size={20}
+                          color="#666"
+                          style={styles.eyeIcon}
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </>
+              ) : (
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    placeholder="Password"
+                    value={password}
+                    secureTextEntry={secureText}
+                    onChangeText={setPassword}
                   />
+                  {password.length > 0 && (
+                    <TouchableOpacity onPress={() => setSecureText(!secureText)}>
+                      <Icon
+                        name={secureText ? 'eye-off' : 'eye'}
+                        size={20}
+                        color="#666"
+                        style={styles.eyeIcon}
+                      />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  handleLogin();
+                }}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>
+                    {fromChangePassword ? 'Save' : 'Login'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              {!fromChangePassword && (
+                <TouchableOpacity
+
+                  style={styles.buttonReg}
+                  onPress={() => { Keyboard.dismiss(); setRegisterVisible(true) }}
+                >
+                  <Text style={styles.buttonText}>New User, Wants to Register ?</Text>
                 </TouchableOpacity>
               )}
-            </View>
-          )}
 
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => {
-              Keyboard.dismiss();
-              handleLogin();
-            }}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>
-                {fromChangePassword ? 'Save' : 'Login'}
-              </Text>
-            )}
-          </TouchableOpacity>
+              <Modal animationType="fade" transparent={true} visible={registerVisible}>
+                <View style={styles.modalOverlay}>
+                  <View style={styles.modalContent}>
+                    <Text style={styles.modalTitle}>Register Hotel</Text>
 
-          {!fromChangePassword && (
-            <TouchableOpacity
-              style={styles.buttonReg}
-              onPress={() => setRegisterVisible(true)}
-            >
-              <Text style={styles.buttonText}>New User, Wants to Register ?</Text>
-            </TouchableOpacity>
-          )}
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Hotel Name"
+                      value={registerHotelName}
+                      onChangeText={(text) => {
+                        setRegisterHotelName(text);
+                        if (text) setRegisterHotelNameError('');
+                      }}
+                      editable={!registerLoading}
+                    />
+                    {registerHotelNameError ? (
+                      <Text style={styles.errorText}>{registerHotelNameError}</Text>
+                    ) : null}
 
-          <Modal animationType="fade" transparent={true} visible={registerVisible}>
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Register Hotel</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Owned By"
+                      value={registerOwner}
+                      onChangeText={(text) => {
+                        setRegisterOwner(text);
+                        if (text) setRegisterOwnerError('');
+                      }}
+                      editable={!registerLoading}
+                    />
+                    {registerOwnerError ? (
+                      <Text style={styles.errorText}>{registerOwnerError}</Text>
+                    ) : null}
 
-                <TextInput
-                  style={styles.input}
-                  placeholder="Hotel Name"
-                  value={registerHotelName}
-                  onChangeText={(text) => {
-                    setRegisterHotelName(text);
-                    if (text) setRegisterHotelNameError('');
-                  }}
-                />
-                {registerHotelNameError ? (
-                  <Text style={styles.errorText}>{registerHotelNameError}</Text>
-                ) : null}
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Address"
+                      value={registerPlace}
+                      onChangeText={(text) => {
+                        setRegisterPlace(text);
+                        if (text) setRegisterPlaceError('');
+                      }}
+                      editable={!registerLoading}
+                    />
+                    {registerPlaceError ? (
+                      <Text style={styles.errorText}>{registerPlaceError}</Text>
+                    ) : null}
 
-                <TextInput
-                  style={styles.input}
-                  placeholder="Owned By"
-                  value={registerOwner}
-                  onChangeText={(text) => {
-                    setRegisterOwner(text);
-                    if (text) setRegisterOwnerError('');
-                  }}
-                />
-                {registerOwnerError ? (
-                  <Text style={styles.errorText}>{registerOwnerError}</Text>
-                ) : null}
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Mobile Number"
+                      value={registerMobile}
+                      keyboardType="numeric"
+                      maxLength={10}
+                      onChangeText={(text) => {
+                        const cleaned = text.replace(/[^0-9]/g, '');
+                        setRegisterMobile(cleaned);
+                        if (cleaned.length === 10) setRegisterMobileError('');
+                      }}
+                      editable={!registerLoading}
+                    />
+                    {registerMobileError ? (
+                      <Text style={styles.errorText}>{registerMobileError}</Text>
+                    ) : null}
 
-                <TextInput
-                  style={styles.input}
-                  placeholder="Address"
-                  value={registerPlace}
-                  onChangeText={(text) => {
-                    setRegisterPlace(text);
-                    if (text) setRegisterPlaceError('');
-                  }}
-                />
-                {registerPlaceError ? (
-                  <Text style={styles.errorText}>{registerPlaceError}</Text>
-                ) : null}
+                    <TextInput
+                      style={styles.input}
+                      placeholder="EmailID"
+                      value={registerEmailID}
+                      onChangeText={(text) => {
+                        setRegisterEmailID(text);
+                        if (text) setRegisterEmailIDError('');
+                      }}
+                      editable={!registerLoading}
+                    />
+                    {registerEmailIDError ? (
+                      <Text style={styles.errorText}>{registerEmailIDError}</Text>
+                    ) : null}
 
-                <TextInput
-                  style={styles.input}
-                  placeholder="Mobile Number"
-                  value={registerMobile}
-                  keyboardType="numeric"
-                  maxLength={10}
-                  onChangeText={(text) => {
-                    const cleaned = text.replace(/[^0-9]/g, '');
-                    setRegisterMobile(cleaned);
-                    if (cleaned.length === 10) setRegisterMobileError('');
-                  }}
-                />
-                {registerMobileError ? (
-                  <Text style={styles.errorText}>{registerMobileError}</Text>
-                ) : null}
+                    <TouchableOpacity
+                      style={styles.button}
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        RegisterYourHotel();
+                      }}
+                      disabled={registerLoading}
+                    >
+                      <Text style={styles.buttonText}>Register</Text>
+                    </TouchableOpacity>
 
-                <TextInput
-                  style={styles.input}
-                  placeholder="EmailID"
-                  value={registerEmailID}
-                  onChangeText={(text) => {
-                    setRegisterEmailID(text);
-                    if (text) setRegisterEmailIDError('');
-                  }}
-                />
-                {registerEmailIDError ? (
-                  <Text style={styles.errorText}>{registerEmailIDError}</Text>
-                ) : null}
+                    <TouchableOpacity
+                      style={[styles.button, { marginTop: 10 }]}
+                      onPress={() => setRegisterVisible(false)}
+                      disabled={registerLoading}
+                    >
+                      <Text style={styles.buttonText}>Cancel</Text>
+                    </TouchableOpacity>
 
-                <TouchableOpacity style={styles.button} onPress={RegisterYourHotel}>
-                  <Text style={styles.buttonText}>Register</Text>
-                </TouchableOpacity>
+                    {/* Optional overlay */}
+                    {registerLoading && (
+                      <View style={styles.loaderOverlay}>
+                        <ActivityIndicator size="large" color="#fff" />
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </Modal>
 
-                <TouchableOpacity
-                  style={[styles.button, { marginTop: 10 }]}
-                  onPress={() => setRegisterVisible(false)}
-                >
-                  <Text style={styles.buttonText}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
-        </ScrollView>
+
+            </ScrollView>
+          </View>
+        </ImageBackground>
+        <Modal visible={loginInProgress} transparent animationType="fade">
+          <View style={styles.fullScreenLoader}>
+            <ActivityIndicator size="large" color="#fff" />
+            <Text style={styles.loadingText}>Checking credentials...</Text>
+          </View>
+        </Modal>
       </KeyboardAvoidingView>
     </ScreenWrapper>
+
   );
+  // }
 };
 
 export default LoginScreen;
@@ -388,6 +479,36 @@ export default LoginScreen;
 
 
 const styles = StyleSheet.create({
+  fullScreenLoader: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+  },
+  loadingText: {
+    color: '#fff',
+    marginTop: 10,
+    fontSize: 16,
+  },
+  loaderOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+    zIndex: 10
+  }
+  ,
   safeArea: {
     flex: 1,
     backgroundColor: '#F4F6F8', // Match your background
@@ -409,11 +530,11 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     textAlign: 'center',
     fontWeight: 'bold',
-    color: '#1A1A1A',
+    color: '#fff',
   },
   input: {
     height: 50,
-    borderColor: '#E0E0E0',
+    borderColor: '#FFFFFFDD',
     borderWidth: 1,
     marginBottom: 15,
     borderRadius: 12,
@@ -476,7 +597,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: '#fff',
     fontWeight: '600',
     fontSize: 16,
   },
@@ -513,5 +634,19 @@ const styles = StyleSheet.create({
     marginTop: -6,
     marginBottom: 10,
     marginLeft: 5,
+  },
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  container: {
+    flexGrow: 1,
+    padding: 20,
+    justifyContent: 'center',
   },
 });
